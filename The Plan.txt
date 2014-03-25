@@ -1,0 +1,39 @@
+
+	Player needs to collect as many animals as possible and drop them into a box before time ends
+		Need to press button while on top of animal to successfully "catch" it
+		May get nets/projectiles to catch animals with
+	
+
+		
+perhaps
+	GameObject type
+		static sprite type/denoter
+		have a collision test function
+		have location
+		-MovingObject type
+			have velocity
+				-Animal (abstract)
+				-Player
+		-Block type
+			Solid
+			
+			...Different types of blocks
+	
+	
+	Animal types
+	have abstract wander method
+		Ground
+			only wanders where there is ground
+		Flying
+			can fly
+		...etc.
+	
+	
+	AI Interfaces types
+	Avoid
+	Flock (group together)
+	
+	
+	Have an array of sprite/art/graphics class
+		To more organizingly map different GameObject types to Texture2D
+		
