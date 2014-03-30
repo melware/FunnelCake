@@ -43,10 +43,10 @@ perhaps
 	
 Git branches
 	Collision - for collision detection only
-	Gameplay - large umbrella-branch for subbranches
-		Animal - anything to do with Animal movements (speed, wandering AI, etc.)
-		Player - anything to do with Player movements, input handling...
-		everything else, like score, win/lose, goes straight into Gameplay 
+	Gameplay - large umbrella-branch for all things gameplay...
+		anything to do with Animal movements (speed, wandering AI, etc.)
+		anything to do with Player movements, input handling...
+		everything else, like score, win/lose
 	Content - graphic stuffs and level creations
 	
 	Other non-code things like README and Plan edits will go straight into master
