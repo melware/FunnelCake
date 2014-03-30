@@ -15,24 +15,29 @@ namespace FunnelCake
 
 	abstract class Animal : GameObject
 	{
-		private float speed;
-		private Rectangle walkingBox; // For detecting ground to wander on
-		public Animal(Rectangle bound, float spd)
+		protected Vector2 velocity;
+		public Animal(Rectangle bound, Vector2 vel)
 			: base(bound)
 		{
-			speed = spd;
+			velocity = vel;
+		}
+		public abstract void doWander(Tile[,] gameScreen);
+	}
+
+	class Crawler : Animal
+	{
+		protected Rectangle walkingBox; // For detecting ground to wander on
+		public Crawler(Rectangle bound, Vector2 vel)
+			: base(bound, new Vector2(vel.X, 0))  // Make sure the Y-velocity remains zero
+		{
 			// Create a box right below the sprite to find ground
 			walkingBox = new Rectangle((int)(base.X + base.Width), (int)(base.Y + base.Height), (int)base.Width, 1);
 		}
-		// Only use this function to find ground
-		public override Rectangle Intersects(GameObject otherObj)
+		public override GOType Type { get { return GOType.CRAWLER; } }
+
+		public override void doWander(Tile[,] gameScreen)
 		{
-			Rectangle other = new Rectangle((int)otherObj.X, (int)otherObj.Y, otherObj.Width, otherObj.Height);
-			return Rectangle.Intersect(walkingBox, other);
-		}
-		public void doWander(Tile[,] gameScreen)
-		{
-			base.X += speed; walkingBox.X = (int)base.X;
+			base.X += velocity.X; walkingBox.X = (int)base.X;
 			int intersectedWidth = 0;
 			foreach (Tile b in gameScreen)
 			{
@@ -44,16 +49,16 @@ namespace FunnelCake
 			}
 			if (intersectedWidth < walkingBox.Width)
 			{
-				speed *= -1;
+				velocity.X *= -1;
 			}
 		}
-	}
 
-	class Crawler : Animal
-	{
-		public Crawler(Rectangle bound, float spd)
-			: base(bound, spd) {}
-		public override GOType Type { get { return GOType.CRAWLER; } }
+		// Only use this function to find ground
+		public override Rectangle Intersects(GameObject otherObj)
+		{
+			Rectangle other = new Rectangle((int)otherObj.X, (int)otherObj.Y, otherObj.Width, otherObj.Height);
+			return Rectangle.Intersect(walkingBox, other);
+		}
 	}
 
 

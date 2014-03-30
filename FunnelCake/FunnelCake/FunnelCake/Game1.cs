@@ -24,6 +24,11 @@ namespace FunnelCake
 	{
 		GraphicsDeviceManager graphics;
 		SpriteBatch spriteBatch;
+		const int LEVEL_COUNTDOWN = 20000; // Milliseconds
+		int countdown;
+
+		int curLevel;
+		const int MAX_LEVELS = 2;
 
 		// Screen size
 		const int HEIGHT = 750;
@@ -42,16 +47,14 @@ namespace FunnelCake
 
 		Texture2D blockSolid;
 		Texture2D blockPlank	;
-		Texture2D enemySprite	;
-		Texture2D petSprite		;
+		Texture2D crawlerSprite	;
 		Texture2D playerSprite	;
 
 		// Fonts
 		SpriteFont titleFont;
 		SpriteFont subTitleFont;
 
-		const float ENEMY_SPEED = 3;
-		const float PET_SPEED = 2;
+		Vector2 CRAWLER_SPEED = new Vector2(2,0);
 
 		const float PLAYER_SPEED = 4;
 		const float PLAYER_JUMP = 350 / 0.5f; // jump height / time to reach height
@@ -74,6 +77,7 @@ namespace FunnelCake
 			gameScreen = new Tile[ROWS, COLS];
 			animals = new List<Animal>();
 			score = 0;
+			curLevel = 1;
 
 			base.Initialize();
 		}
@@ -83,12 +87,11 @@ namespace FunnelCake
 			// Create a new SpriteBatch, which can be used to draw textures.
 			spriteBatch = new SpriteBatch(GraphicsDevice);
 
-			blockSolid	= Content.Load<Texture2D>(@"Sprites/block_solid");
-			blockPlank	= Content.Load<Texture2D>(@"Sprites/block_plank");
-			enemySprite	= Content.Load<Texture2D>(@"Sprites/enemy");
-			petSprite		= Content.Load<Texture2D>(@"Sprites/pet");
+			blockSolid		= Content.Load<Texture2D>(@"Sprites/block_solid");
+			blockPlank		= Content.Load<Texture2D>(@"Sprites/block_plank");
+			crawlerSprite	= Content.Load<Texture2D>(@"Sprites/pet");
 			playerSprite	= Content.Load<Texture2D>(@"Sprites/player");
-			loadLevel();
+			loadLevel(1);
 
 			titleFont = Content.Load<SpriteFont>(@"Fonts\Titles");
 			subTitleFont = Content.Load<SpriteFont>(@"Fonts\Sub_titles");
@@ -107,13 +110,16 @@ namespace FunnelCake
 				this.Exit();
 
 			KeyboardState curKey = Keyboard.GetState();
-			if (gameState == GameState.START && curKey.IsKeyDown(Keys.Space)) { gameState = GameState.PLAY; }
+			if (gameState == GameState.START && curKey.IsKeyDown(Keys.Space)) { gameState = GameState.PLAY; countdown = LEVEL_COUNTDOWN; }
 			else if (gameState == GameState.PLAY)
 			{
-				// Check for win state - when player has all pets
-				if (animals.Count == 0)
+				// Check for when to change to next level
+				if (animals.Count == 0 || countdown <= 0)
 				{
-					gameState = GameState.WIN;
+					curLevel ++;
+					countdown = LEVEL_COUNTDOWN;
+					if (curLevel <= MAX_LEVELS) loadLevel(curLevel);
+					else gameState = GameState.WIN;
 					return;
 				}
 				// Move player
@@ -134,7 +140,7 @@ namespace FunnelCake
 				foreach (Crawler e in animals) e.doWander(gameScreen);
 
 				handlePlayerCollisions();
-
+				countdown -= gameTime.ElapsedGameTime.Milliseconds;
 			}
 
             player.UpdateOldRec();
@@ -233,7 +239,7 @@ namespace FunnelCake
 				switch (gameState)
 				{
 					case GameState.START:
-						spriteBatch.DrawString(titleFont, "Save the Pets!", Vector2.Zero, Color.White);
+						spriteBatch.DrawString(titleFont, "Save the Animals!", Vector2.Zero, Color.White);
 						spriteBatch.DrawString(subTitleFont, "Press SPACE to start", new Vector2(0, HEIGHT / 2), Color.White);
 						break;
 					case GameState.LOSE:
@@ -249,11 +255,20 @@ namespace FunnelCake
 			else
 			{
 				// Draw the game objects
-				foreach (Crawler p in animals) spriteBatch.Draw(petSprite, p.Location, Color.White);
-				foreach (Tile b in gameScreen) if (b != null) spriteBatch.Draw(blockSolid, b.Location, Color.White);
+				foreach (Crawler p in animals) spriteBatch.Draw(crawlerSprite, p.Location, Color.White);
+				foreach (Tile b in gameScreen)
+				{
+					if (b != null)
+					{
+						if (b.Type == GOType.BSOLID) spriteBatch.Draw(blockSolid, b.Location, Color.White);
+						else if (b.Type == GOType.BPLANK) spriteBatch.Draw(blockPlank, b.Location, Color.White);
+					}
+				}
 				spriteBatch.Draw(playerSprite, player.Location, Color.White);
 				// Score
 				spriteBatch.DrawString(subTitleFont, "" + score, Vector2.Zero, Color.White);
+				// Time left
+				spriteBatch.DrawString(subTitleFont, "" + countdown / 1000, new Vector2(950, 0), Color.White);
 			}
 
 			spriteBatch.End();
@@ -261,12 +276,14 @@ namespace FunnelCake
 			base.Draw(gameTime);
 		}
 
-		private void loadLevel()
+		private void loadLevel(int level)
 		{
-			System.IO.Stream stream = TitleContainer.OpenStream("Content/Levels/1.txt");
+			System.IO.Stream stream = TitleContainer.OpenStream("Content/Levels/"+level+".txt");
 			System.IO.StreamReader sreader = new System.IO.StreamReader(stream);
 			string line;
 			int r = 0;
+			gameScreen = new Tile[ROWS, COLS];
+			animals = new List<Animal>();
 			while ((line = sreader.ReadLine()) != null)
 			{
 				for (int c = 0; c < line.Length; c++)
@@ -283,7 +300,7 @@ namespace FunnelCake
 							player = new Player(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
 							break;
 						case GOType.CRAWLER:
-							animals.Add(new Crawler(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM), 2));
+							animals.Add(new Crawler(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM),CRAWLER_SPEED));
 							break;
 						case GOType.EMPTY:
 						default:
