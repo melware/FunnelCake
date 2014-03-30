@@ -1,3 +1,17 @@
+Project: Funnel Cake
+Team: Samir Mohamed and Shannon Li
+The game stars an interplanetary explorer collecting specimens. It’s a platforming game where the
+player must save as many animals as possible in the allotted time. Once the time is up the player will
+be forced to move to the next zone. The game will feature portals that change the rules of gravity
+for whatever passes through it. The animals will be flocking and have varying sense to avoid you. In
+the final level, you’ll have stepped in deep doodoo. The animal who created the feces will chase you
+all the way back to the beginning of the game, where you’ll either get the heck off the planet or die.
+IF YOU DIE, YOU’RE DEAD FOREVER, MAN--you’ll have to restart the game. That last
+enemy will be in 3d, hopefully. If you successfully get off the last planet, you’ll have a final score to
+compare with your friends.
+Our halfway deliverable will have most or all of the levels put in to place, with none of the non-
+player characters in play yet
+
 
 	Player needs to collect as many animals as possible and drop them into a box before time ends
 		Need to press button while on top of animal to successfully "catch" it
