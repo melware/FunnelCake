@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
@@ -9,83 +10,276 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 
+/*
+ * Samir Mohamed Shannon Li
+ * CS3113 Game Programming
+ * Final project Halfway Deliverable
+ * 
+ */
+
 namespace FunnelCake
 {
-	/// <summary>
-	/// This is the main type for your game
-	/// </summary>
+
 	public class Game1 : Microsoft.Xna.Framework.Game
 	{
 		GraphicsDeviceManager graphics;
 		SpriteBatch spriteBatch;
 
+		// Screen size
+		const int HEIGHT = 750;
+		const int WIDTH = 1000;
+		const int ROWS = 15;
+		const int COLS = 20;
+		const int BLOCK_DIM = 50;   // Block dimension in pixels (width == height)
+
+		enum GameState { START, PLAY, LOSE, WIN };
+		GameState gameState;
+
+		// Sprites
+		List<Animal> animals;
+		Player player;
+		Tile[,] gameScreen;   // Array of tiles to display
+
+		Texture2D blockSolid;
+		Texture2D blockPlank	;
+		Texture2D enemySprite	;
+		Texture2D petSprite		;
+		Texture2D playerSprite	;
+
+		// Fonts
+		SpriteFont titleFont;
+		SpriteFont subTitleFont;
+
+		const float ENEMY_SPEED = 3;
+		const float PET_SPEED = 2;
+
+		const float PLAYER_SPEED = 4;
+		const float PLAYER_JUMP = 350 / 0.5f; // jump height / time to reach height
+		const float GRAVITY = 350 / 0.25f;
+		const float OBJ_SPEED = 0.5f;
+
+		int score;
+
 		public Game1()
 		{
 			graphics = new GraphicsDeviceManager(this);
+			graphics.PreferredBackBufferHeight = HEIGHT;
+			graphics.PreferredBackBufferWidth = WIDTH;
 			Content.RootDirectory = "Content";
 		}
 
-		/// <summary>
-		/// Allows the game to perform any initialization it needs to before starting to run.
-		/// This is where it can query for any required services and load any non-graphic
-		/// related content.  Calling base.Initialize will enumerate through any components
-		/// and initialize them as well.
-		/// </summary>
 		protected override void Initialize()
 		{
-			// TODO: Add your initialization logic here
+			gameState = GameState.START;
+			gameScreen = new Tile[ROWS, COLS];
+			animals = new List<Animal>();
+			score = 0;
 
 			base.Initialize();
 		}
 
-		/// <summary>
-		/// LoadContent will be called once per game and is the place to load
-		/// all of your content.
-		/// </summary>
 		protected override void LoadContent()
 		{
 			// Create a new SpriteBatch, which can be used to draw textures.
 			spriteBatch = new SpriteBatch(GraphicsDevice);
 
-			// TODO: use this.Content to load your game content here
+			blockSolid	= Content.Load<Texture2D>(@"Sprites/block_solid");
+			blockPlank	= Content.Load<Texture2D>(@"Sprites/block_plank");
+			enemySprite	= Content.Load<Texture2D>(@"Sprites/enemy");
+			petSprite		= Content.Load<Texture2D>(@"Sprites/pet");
+			playerSprite	= Content.Load<Texture2D>(@"Sprites/player");
+			loadLevel();
+
+			titleFont = Content.Load<SpriteFont>(@"Fonts\Titles");
+			subTitleFont = Content.Load<SpriteFont>(@"Fonts\Sub_titles");
+
 		}
 
-		/// <summary>
-		/// UnloadContent will be called once per game and is the place to unload
-		/// all content.
-		/// </summary>
 		protected override void UnloadContent()
 		{
 			// TODO: Unload any non ContentManager content here
 		}
 
-		/// <summary>
-		/// Allows the game to run logic such as updating the world,
-		/// checking for collisions, gathering input, and playing audio.
-		/// </summary>
-		/// <param name="gameTime">Provides a snapshot of timing values.</param>
 		protected override void Update(GameTime gameTime)
 		{
 			// Allows the game to exit
 			if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
 				this.Exit();
 
-			// TODO: Add your update logic here
+			KeyboardState curKey = Keyboard.GetState();
+			if (gameState == GameState.START && curKey.IsKeyDown(Keys.Space)) { gameState = GameState.PLAY; }
+			else if (gameState == GameState.PLAY)
+			{
+				// Check for win state - when player has all pets
+				if (animals.Count == 0)
+				{
+					gameState = GameState.WIN;
+					return;
+				}
+				// Move player
+				if (curKey.IsKeyDown(Keys.Left)) player.X -= PLAYER_SPEED;
+				if (curKey.IsKeyDown(Keys.Right)) player.X += PLAYER_SPEED;
+				if (!player.isJumping && (curKey.IsKeyDown(Keys.Up) || curKey.IsKeyDown(Keys.Space)))
+				{
+					player.isJumping = true;
+					player.JumpVel = PLAYER_JUMP;
+				}
+				if (player.isJumping)
+				{
+					player.JumpVel -= GRAVITY * (float)gameTime.ElapsedGameTime.TotalSeconds;
+					player.Y -= player.JumpVel * (float)gameTime.ElapsedGameTime.TotalSeconds;
+				}
+				player.X = MathHelper.Clamp(player.X, 0, WIDTH - player.Width);
+				// Move automated objects
+				foreach (Crawler e in animals) e.doWander(gameScreen);
 
+				handlePlayerCollisions();
+
+			}
 			base.Update(gameTime);
 		}
 
-		/// <summary>
-		/// This is called when the game should draw itself.
-		/// </summary>
-		/// <param name="gameTime">Provides a snapshot of timing values.</param>
+		private void handlePlayerCollisions()
+		{
+			bool collided = false;
+			// Collision with blocks
+			foreach (Tile b in gameScreen)
+			{
+				if (b != null)
+				{
+					Rectangle intersect = player.Intersects(b);
+					if (intersect.Width > 0 || intersect.Height > 0)
+					{
+						collided = true;
+						if (b.Type == GOType.BSOLID)
+						{
+							// the intersection lies below the player
+							if (player.Y + player.Height > b.Y && player.Y < b.Y)
+							{
+								if (player.isJumping) player.isJumping = false;
+								player.Y = b.Y - player.Height;
+							}
+							// intersection is above player
+							if (player.Y < b.Y + b.Height && player.Y + player.Height > b.Y)
+							{
+								// Reset the jump velocity
+								player.JumpVel = 0;
+								player.Y = b.Y + b.Height;
+							}
+						}
+						else // if plank
+						{
+							if (player.JumpVel <= 0)
+							{// the intersection lies below the player
+								if (player.Y + player.Height > b.Y && player.Y < b.Y)
+								{
+									if (player.isJumping) player.isJumping = false;
+									player.Y = b.Y - player.Height;
+								}
+
+							}
+						}
+						// Check for side collision
+						if (intersect.Height > intersect.Width)
+						{
+							if (player.X + player.Width > b.X && player.X < b.X)
+							{
+								player.X = b.X - player.Width;
+							}
+							if (player.X + player.Width > b.X + b.Width && player.X < b.X + b.Width)
+							{
+								player.X = b.X + b.Height;
+							}
+						}
+					}
+				}
+			}
+			if (!collided) player.isJumping = true;
+
+			// Collision with pets
+			foreach (Crawler p in animals)
+			{
+				Rectangle intersect = player.Intersects(p);
+				if (intersect.Width > 0 || intersect.Height > 0)
+				{
+					score += 1;
+					animals.Remove(p);
+					break;
+				}
+			}
+		}
+
 		protected override void Draw(GameTime gameTime)
 		{
 			GraphicsDevice.Clear(Color.CornflowerBlue);
 
-			// TODO: Add your drawing code here
+			spriteBatch.Begin();
+
+			if (gameState != GameState.PLAY)
+			{
+				switch (gameState)
+				{
+					case GameState.START:
+						spriteBatch.DrawString(titleFont, "Save the Pets!", Vector2.Zero, Color.White);
+						spriteBatch.DrawString(subTitleFont, "Press SPACE to start", new Vector2(0, HEIGHT / 2), Color.White);
+						break;
+					case GameState.LOSE:
+						spriteBatch.DrawString(titleFont, "GAME OVER", Vector2.Zero, Color.White);
+						break;
+					case GameState.WIN:
+						spriteBatch.DrawString(titleFont, "You win!", Vector2.Zero, Color.White);
+						break;
+					default:
+						break;
+				}
+			}
+			else
+			{
+				// Draw the game objects
+				foreach (Crawler p in animals) spriteBatch.Draw(petSprite, p.Location, Color.White);
+				foreach (Tile b in gameScreen) if (b != null) spriteBatch.Draw(blockSolid, b.Location, Color.White);
+				spriteBatch.Draw(playerSprite, player.Location, Color.White);
+				// Score
+				spriteBatch.DrawString(subTitleFont, "" + score, Vector2.Zero, Color.White);
+			}
+
+			spriteBatch.End();
 
 			base.Draw(gameTime);
+		}
+
+		private void loadLevel()
+		{
+			System.IO.Stream stream = TitleContainer.OpenStream("Content/Levels/1.txt");
+			System.IO.StreamReader sreader = new System.IO.StreamReader(stream);
+			string line;
+			int r = 0;
+			while ((line = sreader.ReadLine()) != null)
+			{
+				for (int c = 0; c < line.Length; c++)
+				{
+					switch ((GOType)line.ElementAt<char>(c))
+					{
+						case GOType.BSOLID:
+							gameScreen[r, c] = new Tile(GOType.BSOLID, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+							break;
+						case GOType.BPLANK:
+							gameScreen[r, c] = new Tile(GOType.BPLANK, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+							break;
+						case GOType.PLAYER:
+							player = new Player(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+							break;
+						case GOType.CRAWLER:
+							animals.Add(new Crawler(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM), 2));
+							break;
+						case GOType.EMPTY:
+						default:
+							break;
+					}
+				}
+				r++;
+			}
+			sreader.Close();
 		}
 	}
 }

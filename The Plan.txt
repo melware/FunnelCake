@@ -36,4 +36,6 @@ perhaps
 	
 	Have an array of sprite/art/graphics class
 		To more organizingly map different GameObject types to Texture2D
-		
+	
+	Keyboard input handler	
+	
