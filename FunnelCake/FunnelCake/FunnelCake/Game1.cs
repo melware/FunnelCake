@@ -42,8 +42,7 @@ namespace FunnelCake
 
 		Texture2D blockSolid;
 		Texture2D blockPlank	;
-		Texture2D enemySprite	;
-		Texture2D petSprite		;
+		Texture2D crawlerSprite	;
 		Texture2D playerSprite	;
 
 		// Fonts
@@ -83,10 +82,9 @@ namespace FunnelCake
 			// Create a new SpriteBatch, which can be used to draw textures.
 			spriteBatch = new SpriteBatch(GraphicsDevice);
 
-			blockSolid	= Content.Load<Texture2D>(@"Sprites/block_solid");
-			blockPlank	= Content.Load<Texture2D>(@"Sprites/block_plank");
-			enemySprite	= Content.Load<Texture2D>(@"Sprites/enemy");
-			petSprite		= Content.Load<Texture2D>(@"Sprites/pet");
+			blockSolid		= Content.Load<Texture2D>(@"Sprites/block_solid");
+			blockPlank		= Content.Load<Texture2D>(@"Sprites/block_plank");
+			crawlerSprite	= Content.Load<Texture2D>(@"Sprites/pet");
 			playerSprite	= Content.Load<Texture2D>(@"Sprites/player");
 			loadLevel();
 
@@ -220,7 +218,7 @@ namespace FunnelCake
 				switch (gameState)
 				{
 					case GameState.START:
-						spriteBatch.DrawString(titleFont, "Save the Pets!", Vector2.Zero, Color.White);
+						spriteBatch.DrawString(titleFont, "Save the Animals!", Vector2.Zero, Color.White);
 						spriteBatch.DrawString(subTitleFont, "Press SPACE to start", new Vector2(0, HEIGHT / 2), Color.White);
 						break;
 					case GameState.LOSE:
@@ -236,7 +234,7 @@ namespace FunnelCake
 			else
 			{
 				// Draw the game objects
-				foreach (Crawler p in animals) spriteBatch.Draw(petSprite, p.Location, Color.White);
+				foreach (Crawler p in animals) spriteBatch.Draw(crawlerSprite, p.Location, Color.White);
 				foreach (Tile b in gameScreen) if (b != null) spriteBatch.Draw(blockSolid, b.Location, Color.White);
 				spriteBatch.Draw(playerSprite, player.Location, Color.White);
 				// Score
