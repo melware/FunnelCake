@@ -49,8 +49,7 @@ namespace FunnelCake
 		SpriteFont titleFont;
 		SpriteFont subTitleFont;
 
-		const float ENEMY_SPEED = 3;
-		const float PET_SPEED = 2;
+		Vector2 CRAWLER_SPEED = new Vector2(2,0);
 
 		const float PLAYER_SPEED = 4;
 		const float PLAYER_JUMP = 350 / 0.5f; // jump height / time to reach height
@@ -268,7 +267,7 @@ namespace FunnelCake
 							player = new Player(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
 							break;
 						case GOType.CRAWLER:
-							animals.Add(new Crawler(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM), 2));
+							animals.Add(new Crawler(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM),CRAWLER_SPEED));
 							break;
 						case GOType.EMPTY:
 						default:
