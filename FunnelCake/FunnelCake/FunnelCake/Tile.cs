@@ -14,7 +14,7 @@ namespace FunnelCake
 {
 	class Tile : GameObject
 	{
-		private static GOType type;
+		private GOType type;
 
 		public Tile(GOType t, Rectangle bound)
 			: base(bound) { type = t; }
