@@ -41,7 +41,12 @@
       <Private>False</Private>
     </Reference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="Levels\2.txt">
+      <Name>2</Name>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="Sprites\block_plank.png">
       <Name>block_plank</Name>
