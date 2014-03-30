@@ -7,15 +7,18 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace FunnelCake
 {
+    
 	class Player : GameObject
 	{
 		bool jumpState;
 		float curJumpVel;
+        Rectangle oldRec;
 		public Player(Rectangle bound)
 			: base(bound)
 		{
 			jumpState = false;
 			curJumpVel = 0;
+            oldRec = bound;
 		}
 
 		public override GOType Type
@@ -34,5 +37,10 @@ namespace FunnelCake
 			get { return curJumpVel; }
 			set { curJumpVel = value; }
 		}
+
+        public void UpdateOldRec()
+        {
+            oldRec = this.boundBox;
+        }
 	}
 }

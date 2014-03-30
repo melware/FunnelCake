@@ -136,6 +136,8 @@ namespace FunnelCake
 				handlePlayerCollisions();
 
 			}
+
+            player.UpdateOldRec();
 			base.Update(gameTime);
 		}
 
