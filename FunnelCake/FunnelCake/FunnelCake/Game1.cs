@@ -233,7 +233,7 @@ namespace FunnelCake
 						spriteBatch.DrawString(titleFont, "GAME OVER", Vector2.Zero, Color.White);
 						break;
 					case GameState.WIN:
-						spriteBatch.DrawString(titleFont, "You win!", Vector2.Zero, Color.White);
+						spriteBatch.DrawString(titleFont, "FIN.\n You scored " + score+"!", Vector2.Zero, Color.White);
 						break;
 					default:
 						break;
