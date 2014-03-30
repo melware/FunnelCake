@@ -16,7 +16,7 @@ namespace FunnelCake
 	};
 	abstract class GameObject
 	{
-		private Rectangle boundBox;
+		protected Rectangle boundBox;
 
 		public GameObject(Rectangle b)
 		{
