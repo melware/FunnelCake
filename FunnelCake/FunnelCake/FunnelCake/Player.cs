@@ -11,6 +11,7 @@ namespace FunnelCake
 	class Player : GameObject
 	{
 		bool jumpState;
+        bool upWhileJump;
 		float curJumpVel;
         Rectangle oldRec;
 		public Player(Rectangle bound)
@@ -19,6 +20,7 @@ namespace FunnelCake
 			jumpState = false;
 			curJumpVel = 0;
             oldRec = bound;
+            holdingUp = false;
 		}
 
 		public override GOType Type
@@ -32,6 +34,12 @@ namespace FunnelCake
 			// If the player is no longer jumping, also set jump velocity to 0
 			set { jumpState = value; if (!jumpState) curJumpVel = 0; }
 		}
+
+        public bool holdingUp
+        {
+            get { return upWhileJump; }
+            set { upWhileJump = value; }
+        }
 		public float JumpVel
 		{
 			get { return curJumpVel; }

@@ -24,6 +24,7 @@ namespace FunnelCake
 	{
 		GraphicsDeviceManager graphics;
 		SpriteBatch spriteBatch;
+        KeyboardState oldKey;
 		const int LEVEL_COUNTDOWN = 20000; // Milliseconds
 		int countdown;
 
@@ -57,9 +58,10 @@ namespace FunnelCake
 		Vector2 CRAWLER_SPEED = new Vector2(2,0);
 
 		const float PLAYER_SPEED = 4;
-		const float PLAYER_JUMP = 350 / 0.5f; // jump height / time to reach height
+		const float PLAYER_JUMP = 300 / 0.5f; // jump height / time to reach height
 		const float GRAVITY = 350 / 0.25f;
 		const float OBJ_SPEED = 0.5f;
+        const float HOLD_UP = 10;
 
 		int score;
 
@@ -78,6 +80,7 @@ namespace FunnelCake
 			animals = new List<Animal>();
 			score = 0;
 			curLevel = 1;
+            oldKey = Keyboard.GetState();
 
 			base.Initialize();
 		}
@@ -129,9 +132,16 @@ namespace FunnelCake
 				{
 					player.isJumping = true;
 					player.JumpVel = PLAYER_JUMP;
+                    player.holdingUp = true;
 				}
 				if (player.isJumping)
 				{
+                    //check if they've been holding up since the jump started
+                    if (!curKey.IsKeyDown(Keys.Up))
+                        player.holdingUp = false;
+                    if (player.holdingUp)
+                        player.JumpVel += HOLD_UP;
+
 					player.JumpVel -= GRAVITY * (float)gameTime.ElapsedGameTime.TotalSeconds;
 					player.Y -= player.JumpVel * (float)gameTime.ElapsedGameTime.TotalSeconds;
 				}
@@ -144,6 +154,7 @@ namespace FunnelCake
 			}
 
             player.UpdateOldRec();
+            oldKey = curKey;
 			base.Update(gameTime);
 		}
 
