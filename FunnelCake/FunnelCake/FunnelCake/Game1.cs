@@ -159,19 +159,30 @@ namespace FunnelCake
 						collided = true;
 						if (b.Type == GOType.BSOLID)
 						{
-							// the intersection lies below the player
-							if (player.Y + player.Height > b.Y && player.Y < b.Y)
-							{
-								if (player.isJumping) player.isJumping = false;
-								player.Y = b.Y - player.Height;
-							}
-							// intersection is above player
-							if (player.Y < b.Y + b.Height && player.Y + player.Height > b.Y)
-							{
-								// Reset the jump velocity
-								player.JumpVel = 0;
-								player.Y = b.Y + b.Height;
-							}
+
+                            if (intersect.Width <= PLAYER_SPEED)
+                            {
+                                if (player.X < b.X)
+                                    player.X = b.X - player.Width;
+                                else
+                                    player.X = b.X + b.Width;
+                            }
+                            else
+                            {
+                                // the intersection lies below the player
+                                if (player.Y + player.Height > b.Y && player.Y < b.Y)
+                                {
+                                    if (player.isJumping) player.isJumping = false;
+                                    player.Y = b.Y - player.Height;
+                                }
+                                // intersection is above player
+                                if (player.Y < b.Y + b.Height && player.Y + player.Height > b.Y)
+                                {
+                                    // Reset the jump velocity
+                                    player.JumpVel = 0;
+                                    player.Y = b.Y + b.Height;
+                                }
+                            }
 						}
 						else // if plank
 						{
