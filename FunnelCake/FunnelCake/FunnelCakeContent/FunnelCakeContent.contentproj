@@ -42,8 +42,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Levels\2.txt">
-      <Name>2</Name>
+    <Content Include="Levels\1.txt">
+      <Name>1</Name>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -85,8 +85,8 @@
       <Importer>FontDescriptionImporter</Importer>
       <Processor>FontDescriptionProcessor</Processor>
     </Compile>
-    <None Include="Levels\1.txt">
-      <Name>1</Name>
+    <None Include="Levels\2.txt">
+      <Name>2</Name>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
