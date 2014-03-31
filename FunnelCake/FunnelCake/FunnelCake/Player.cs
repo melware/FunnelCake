@@ -13,7 +13,7 @@ namespace FunnelCake
 		bool jumpState;
         bool upWhileJump;
 		float curJumpVel;
-        Rectangle oldRec;
+        public Rectangle oldRec;
         
 		public Player(Rectangle bound)
 			: base(bound)
@@ -22,6 +22,7 @@ namespace FunnelCake
 			curJumpVel = 0;
             oldRec = bound;
             holdingUp = false;
+            pt1 = portalType1.LEFTSIDE;
             pt2 = portalType2.HALF;
 		}
 
