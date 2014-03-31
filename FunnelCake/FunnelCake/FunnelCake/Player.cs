@@ -14,6 +14,7 @@ namespace FunnelCake
         bool upWhileJump;
 		float curJumpVel;
         Rectangle oldRec;
+        
 		public Player(Rectangle bound)
 			: base(bound)
 		{
@@ -21,6 +22,7 @@ namespace FunnelCake
 			curJumpVel = 0;
             oldRec = bound;
             holdingUp = false;
+            pt2 = portalType2.HALF;
 		}
 
 		public override GOType Type
@@ -38,12 +40,18 @@ namespace FunnelCake
         public bool holdingUp
         {
             get { return upWhileJump; }
-            set { upWhileJump = value; }
+            set 
+            {
+                if (pt2 == portalType2.HALF)
+                    upWhileJump = false;
+                else
+                    upWhileJump = value; 
+            }
         }
 		public float JumpVel
 		{
 			get { return curJumpVel; }
-			set { curJumpVel = value; }
+            set { curJumpVel = value; }
 		}
 
         public void UpdateOldRec()

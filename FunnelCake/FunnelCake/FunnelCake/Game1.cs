@@ -142,7 +142,12 @@ namespace FunnelCake
                     if (player.holdingUp)
                         player.JumpVel += HOLD_UP;
 
-					player.JumpVel -= GRAVITY * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    if(player.pt2 == portalType2.NORMAL)
+					    player.JumpVel -= GRAVITY * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    else if(player.pt2 == portalType2.HALF)
+                        player.JumpVel -= (GRAVITY/2) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    else if(player.pt2 == portalType2.DOUBLE)
+                        player.JumpVel -= GRAVITY*2 * (float)gameTime.ElapsedGameTime.TotalSeconds;
 					player.Y -= player.JumpVel * (float)gameTime.ElapsedGameTime.TotalSeconds;
 				}
 				player.X = MathHelper.Clamp(player.X, 0, WIDTH - player.Width);

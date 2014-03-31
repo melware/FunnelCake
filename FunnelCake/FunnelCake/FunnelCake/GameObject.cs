@@ -14,16 +14,35 @@ namespace FunnelCake
 		PLAYER = 'p', 
 		CRAWLER = 'c', FLYER = 'f'
 	};
+
+    enum portalType1 { NORMAL, UPSIDE, LEFTSIDE, RIGHTSIDE };
+    enum portalType2 { NORMAL, HALF, DOUBLE };
+
 	abstract class GameObject
 	{
 		public Rectangle boundBox;
+        public portalType1 pt1;
+        public portalType2 pt2;
 
 		public GameObject(Rectangle b)
 		{
 			boundBox = b;
+
+            pt1 = portalType1.NORMAL;
+            pt2 = portalType2.NORMAL;
 		}
 
 		public abstract GOType Type { get; }
+
+        public void SetPortal(portalType1 pt)
+        {
+            pt1 = pt;
+        }
+
+        public void SetPortal(portalType2 pt)
+        {
+            pt2 = pt;
+        }
 
 		public Rectangle Bounds
 		{
