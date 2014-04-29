@@ -7,13 +7,15 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace FunnelCake
 {
-	enum GOType 
-	{
-		EMPTY = '.', 
-		BSOLID = 'x', BPLANK = '=', 
-		PLAYER = 'p', 
-		CRAWLER = 'c', FLYER = 'f'
-	};
+    enum GOType
+    {
+        EMPTY = '.',
+        BSOLID = 'x', BPLANK = '=',
+        PLAYER = 'p',
+        CRAWLER = 'c', FLYER = 'f',
+        UP = '1', DOWN = '2', LEFT = '3', RIGHT = '4',
+        HALF = '6', DOUBLE = '7', OFF = '0'
+    };
 
     enum portalType1 { NORMAL, UPSIDE, LEFTSIDE, RIGHTSIDE };
     enum portalType2 { NORMAL, HALF, DOUBLE };
