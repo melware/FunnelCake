@@ -24,6 +24,7 @@ namespace FunnelCake
 	{
 		GraphicsDeviceManager graphics;
 		SpriteBatch spriteBatch;
+        KeyboardState oldKey;
 		const int LEVEL_COUNTDOWN = 20000; // Milliseconds
 		int countdown;
 
@@ -36,6 +37,7 @@ namespace FunnelCake
 		public const int ROWS = 15;
 		public const int COLS = 20;
 		public const int BLOCK_DIM = 50;   // Block dimension in pixels (width == height)
+        const int PORTAL_COLLISION = 6;
 
 		enum GameState { START, PLAY, LOSE, WIN };
 		GameState gameState;
@@ -49,6 +51,9 @@ namespace FunnelCake
 		Texture2D blockPlank	;
 		Texture2D crawlerSprite;
 		Texture2D flyerSprite;
+
+        Texture2D portaloff, portalup, portaldown, portalleft, 
+            portalright, portalhalf, portaldouble;
 		Texture2D playerSprite	;
 
 		// Fonts
@@ -59,7 +64,8 @@ namespace FunnelCake
 		Vector2 FLYER_SPEED = new Vector2(2, 2);
 
 		const float PLAYER_SPEED = 4;
-		const float PLAYER_JUMP = 350 / 0.5f; // jump height / time to reach height
+		const float PLAYER_JUMP = 300 / 0.5f; // jump height / time to reach height
+        const float HOLD_UP = 10;
 		const float GRAVITY = 350 / 0.25f;
 		const float OBJ_SPEED = 0.5f;
 
@@ -80,6 +86,7 @@ namespace FunnelCake
 			animals = new List<Animal>();
 			score = 0;
 			curLevel = 1;
+            oldKey = Keyboard.GetState();
 
 			base.Initialize();
 		}
@@ -99,6 +106,378 @@ namespace FunnelCake
 			titleFont = Content.Load<SpriteFont>(@"Fonts\Titles");
 			subTitleFont = Content.Load<SpriteFont>(@"Fonts\Sub_titles");
 
+            portaloff      = Content.Load<Texture2D>(@"Sprites/portaloff");
+            portalleft     = Content.Load<Texture2D>(@"Sprites/portalleft");
+            portalright    = Content.Load<Texture2D>(@"Sprites/portalright");
+            portalup       = Content.Load<Texture2D>(@"Sprites/portalup");
+            portaldown     = Content.Load<Texture2D>(@"Sprites/portaldown");
+            portalhalf     = Content.Load<Texture2D>(@"Sprites/portalhalf");
+            portaldouble = Content.Load<Texture2D>(@"Sprites/portaldouble");
+
+		}
+        private void handlePlayerMovement(KeyboardState curKey, GameTime gameTime)
+        {
+            // Move player
+            float x = 0;
+            float y = 0;
+
+            if (curKey.IsKeyDown(Keys.Left)) x -= PLAYER_SPEED;
+            if (curKey.IsKeyDown(Keys.Right)) x += PLAYER_SPEED;
+            if (!player.isJumping && curKey.IsKeyDown(Keys.Up))
+            {
+                player.isJumping = true;
+                player.JumpVel = PLAYER_JUMP;
+                player.holdingUp = true;
+            }
+            if (player.isJumping)
+            {
+                //check if they've been holding up since the jump started
+                if (!curKey.IsKeyDown(Keys.Up))
+                    player.holdingUp = false;
+                if (player.holdingUp)
+                    player.JumpVel += HOLD_UP;
+
+                if (player.pt2 == portalType2.NORMAL)
+                    player.JumpVel -= GRAVITY * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                else if (player.pt2 == portalType2.HALF)
+                    player.JumpVel -= (GRAVITY / 2) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                else if (player.pt2 == portalType2.DOUBLE)
+                    player.JumpVel -= GRAVITY * 2 * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                y -= player.JumpVel * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            }
+
+            switch (player.pt1)
+            {
+                case portalType1.NORMAL:
+                    player.X += x;
+                    player.Y += y;
+                    break;
+                case portalType1.LEFTSIDE:
+                    player.X -= y;
+                    player.Y += x;
+                    break;
+                case portalType1.UPSIDE:
+                    player.X -= x;
+                    player.Y -= y;
+                    break;
+                case portalType1.RIGHTSIDE:
+                    player.X += y;
+                    player.Y -= x;
+                    break;
+                default:
+                    break;
+            }
+
+            player.X = MathHelper.Clamp(player.X, 0, WIDTH - player.Width);
+
+        }
+
+        private void catchAnimal()
+        {// Collision with pets
+			foreach (Animal p in animals)
+			{
+				Rectangle intersect = player.Intersect(p);
+				if (intersect.Width > 0 || intersect.Height > 0)
+				{
+					score += 1;
+					animals.Remove(p);
+					break;
+				}
+			}
+        }
+		private void handlePlatCollisions(Player player)
+		{
+			bool collided = false;
+			// Collision with blocks
+			foreach (Tile b in gameScreen)
+			{
+				if (b != null)
+				{
+					Rectangle intersect = player.Intersect(b);
+					if (intersect.Width > 0 || intersect.Height > 0)
+					{
+						collided = true;
+                        if (b.Type == GOType.UP)
+                        {
+                            if (intersect.Width > BLOCK_DIM - PORTAL_COLLISION && intersect.Height > BLOCK_DIM - PORTAL_COLLISION)
+                            {
+                                player.pt1 = portalType1.UPSIDE;
+                            }
+                        }
+                        else if (b.Type == GOType.DOWN)
+                        {
+                            if (intersect.Width > BLOCK_DIM - PORTAL_COLLISION && intersect.Height > BLOCK_DIM - PORTAL_COLLISION)
+                                player.pt1 = portalType1.NORMAL;
+                        }
+                        else if (b.Type == GOType.LEFT)
+                        {
+                            if (intersect.Width > BLOCK_DIM - PORTAL_COLLISION && intersect.Height > BLOCK_DIM - PORTAL_COLLISION)
+                                player.pt1 = portalType1.LEFTSIDE;
+                        }
+                        else if (b.Type == GOType.RIGHT)
+                        {
+                            if (intersect.Width > BLOCK_DIM - PORTAL_COLLISION && intersect.Height > BLOCK_DIM - PORTAL_COLLISION)
+                                player.pt1 = portalType1.RIGHTSIDE;
+                        }
+                        else if (b.Type == GOType.HALF)
+                        {
+                            if (intersect.Width > BLOCK_DIM - PORTAL_COLLISION && intersect.Height > BLOCK_DIM - PORTAL_COLLISION)
+                                player.pt2 = portalType2.HALF;
+                        }
+                        else if (b.Type == GOType.DOUBLE)
+                        {
+                            if (intersect.Width > BLOCK_DIM - PORTAL_COLLISION && intersect.Height > BLOCK_DIM - PORTAL_COLLISION)
+                                player.pt2 = portalType2.DOUBLE;
+                        }
+                        else
+                        {
+
+                            //Where portal types start deciding things
+                            //////////////////////////////////////////////////////////////////
+                            ///////////////////NORMAL/////////////////////////////////////////
+                            //////////////////////////////////////////////////////////////////
+                            if (player.pt1 == portalType1.NORMAL)
+                            {
+                                if (b.Type == GOType.BSOLID)
+                                {
+
+                                    if (intersect.Width <= PLAYER_SPEED)
+                                    {
+                                        if (player.X < b.X)
+                                            player.X = b.X - player.Width;
+                                        else
+                                            player.X = b.X + b.Width;
+                                    }
+                                    else
+                                    {
+                                        // the intersection lies below the player
+                                        if (player.Y < b.Y)//player.Y + player.Height > b.Y && 
+                                        {
+                                            if (player.isJumping) player.isJumping = false;
+                                            player.Y = b.Y - player.Height;
+                                        }
+                                        // intersection is above player
+                                        if (player.Y + player.Height > b.Y)
+                                        {
+                                            // Reset the jump velocity
+                                            player.JumpVel = 0;
+                                            player.Y = b.Y + b.Height;
+                                        }
+                                    }
+                                }
+                                else // if plank
+                                {
+                                    if (intersect.Width <= PLAYER_SPEED)
+                                    {
+
+                                    }
+                                    else
+                                    {
+                                        if (player.JumpVel <= 0)
+                                        {// the intersection lies below the player
+                                            if (player.Y < b.Y)
+                                            {
+                                                if (player.oldRec.Y + player.Height <= b.Y)
+                                                {
+                                                    if (player.isJumping) player.isJumping = false;
+                                                    player.Y = b.Y - player.Height;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            //////////////////////////////////////////////////////////////////
+                            ///////////////////LEFTSIDE///////////////////////////////////////
+                            //////////////////////////////////////////////////////////////////
+                            // x = -y     y = x
+                            else if (player.pt1 == portalType1.LEFTSIDE)
+                            {
+                                if (b.Type == GOType.BSOLID)
+                                {
+
+                                    if (intersect.Height <= PLAYER_SPEED)
+                                    {
+                                        if (player.Y < b.Y)
+                                            player.Y = b.Y - player.Height;
+                                        else
+                                            player.Y = b.Y + b.Height;
+                                    }
+                                    else
+                                    {
+
+                                        // the intersection lies below the player
+                                        if (player.X < b.X)
+                                        {
+
+                                            player.JumpVel = 0;
+                                            player.X = b.X - b.Width;
+                                        }
+                                        // intersection is above player
+                                        if (player.X + player.Height > b.X)//player.Y < b.Y + b.Height && 
+                                        {
+                                            // Reset the jump velocity
+                                            if (player.isJumping) player.isJumping = false;
+                                            player.X = b.X + player.Width;
+                                        }
+                                    }
+                                }
+                                else // if plank
+                                {
+                                    if (intersect.Width <= PLAYER_SPEED)
+                                    {
+
+                                    }
+                                    else
+                                    {
+                                        if (player.oldRec.Y + player.Height <= b.Y)
+                                        if (player.Y < b.Y)
+                                        {
+                                            player.Y = b.Y - player.Height;
+                                        }
+                                    }
+                                }
+                            }
+                            //////////////////////////////////////////////////////////////////
+                            ///////////////////UPSIDE/////////////////////////////////////////
+                            //////////////////////////////////////////////////////////////////
+                            else if (player.pt1 == portalType1.UPSIDE)
+                            {
+                                if (b.Type == GOType.BSOLID)
+                                {
+
+                                    if (intersect.Width <= PLAYER_SPEED)
+                                    {
+                                        if (player.X < b.X)
+                                            player.X = b.X - player.Width;
+                                        else
+                                            player.X = b.X + b.Width;
+                                    }
+                                    else
+                                    {
+                                        // the intersection lies below the player
+                                        if (player.Y < b.Y)//player.Y + player.Height > b.Y && 
+                                        {
+
+                                            player.JumpVel = 0;
+                                            player.Y = b.Y - player.Height;
+                                        }
+                                        // intersection is above player
+                                        if (player.Y + player.Height > b.Y)//player.Y < b.Y + b.Height && 
+                                        {
+                                            // Reset the jump velocity
+                                            if (player.isJumping) player.isJumping = false;
+                                            player.Y = b.Y + b.Height;
+                                        }
+                                    }
+
+                                }
+                                else // if plank
+                                {
+                                    if (intersect.Width <= PLAYER_SPEED)
+                                    {
+
+                                    }
+                                    else
+                                    {
+                                        if (player.oldRec.Y + player.Height <= b.Y)
+                                            if (player.Y < b.Y)
+                                            {
+                                                player.Y = b.Y - player.Height;
+                                            }
+                                    }
+                                }
+                            }
+                            //////////////////////////////////////////////////////////////////
+                            ///////////////////RIGHTSIDE///////////////////////////////////////
+                            //////////////////////////////////////////////////////////////////
+                            else if (player.pt1 == portalType1.RIGHTSIDE)
+                            {
+                                if (b.Type == GOType.BSOLID)
+                                {
+
+                                    if (intersect.Height <= PLAYER_SPEED)
+                                    {
+                                        if (player.Y < b.Y)
+                                            player.Y = b.Y - player.Height;
+                                        else
+                                            player.Y = b.Y + b.Height;
+                                    }
+                                    else
+                                    {
+
+                                        // the intersection lies below the player
+                                        if (player.X < b.X)//player.Y + player.Height > b.Y && 
+                                        {
+
+                                            if (player.isJumping) player.isJumping = false;
+                                            player.X = b.X - b.Width;
+                                        }
+                                        // intersection is above player
+                                        if (player.X + player.Height > b.X)//player.Y < b.Y + b.Height && 
+                                        {
+                                            // Reset the jump velocity
+                                            
+                                            player.X = b.X + player.Width;
+
+                                            player.JumpVel = 0;
+                                        }
+                                    }
+                                }
+                                else // if plank
+                                {
+                                    if (intersect.Width <= PLAYER_SPEED)
+                                    {
+
+                                    }
+                                    else
+                                    {
+                                        if (player.oldRec.Y + player.Height <= b.Y)
+                                            if (player.Y < b.Y)
+                                            {
+                                                player.Y = b.Y - player.Height;
+                                            }
+                                    }
+                                }
+                            }
+                        }
+					}
+				}
+			}
+			if (!collided) player.isJumping = true;
+            if (player.pt1 == portalType1.NORMAL)
+            {
+            }
+            else
+            {
+                if (player.pt1 == portalType1.LEFTSIDE)
+                {
+                    if (player.X <= 0)
+                    {
+                        player.isJumping = false;
+                    }
+                }
+                else if (player.pt1 == portalType1.UPSIDE)
+                {
+                    if (player.Y <= 0)
+                    {
+                        player.isJumping = false;
+                        player.Y = 0;
+                    }
+                }
+                else if (player.pt1 == portalType1.RIGHTSIDE)
+                {
+                    if (player.X == WIDTH - BLOCK_DIM)
+                    {
+                        player.isJumping = false;
+                    }
+                    if (player.Y < 0)
+                    {
+                        player.Y = 0;
+                    }
+                }
+            }
+			
 		}
 
 		protected override void UnloadContent()
@@ -125,20 +504,7 @@ namespace FunnelCake
 					else gameState = GameState.WIN;
 					return;
 				}
-				// Move player
-				if (curKey.IsKeyDown(Keys.Left)) player.X -= PLAYER_SPEED;
-				if (curKey.IsKeyDown(Keys.Right)) player.X += PLAYER_SPEED;
-				if (!player.isJumping && (curKey.IsKeyDown(Keys.Up) || curKey.IsKeyDown(Keys.Space)))
-				{
-					player.isJumping = true;
-					player.JumpVel = PLAYER_JUMP;
-				}
-				if (player.isJumping)
-				{
-					player.JumpVel -= GRAVITY * (float)gameTime.ElapsedGameTime.TotalSeconds;
-					player.Y -= player.JumpVel * (float)gameTime.ElapsedGameTime.TotalSeconds;
-				}
-				player.X = MathHelper.Clamp(player.X, 0, WIDTH - player.Width);
+				
 				// Move automated objects
 				Random rand = new Random();
 				foreach (Animal e in animals)
@@ -150,91 +516,17 @@ namespace FunnelCake
 					}
 				}
 
-				handlePlayerCollisions();
+                handlePlayerMovement(curKey, gameTime);
+				handlePlatCollisions(player);
+                catchAnimal();
+                player.UpdateOldRec();
 				countdown -= gameTime.ElapsedGameTime.Milliseconds;
 			}
+            
+
+            
+            oldKey = curKey;
 			base.Update(gameTime);
-		}
-
-		private void handlePlayerCollisions()
-		{
-			bool collided = false;
-			// Collision with blocks
-			foreach (Tile b in gameScreen)
-			{
-				if (b != null)
-				{
-					Rectangle intersect = player.Intersect(b);
-					if (intersect.Width > 0 || intersect.Height > 0)
-					{
-						collided = true;
-						if (b.Type == GOType.BSOLID)
-						{
-
-                            if (intersect.Width <= PLAYER_SPEED)
-                            {
-                                if (player.X < b.X)
-                                    player.X = b.X - player.Width;
-                                else
-                                    player.X = b.X + b.Width;
-                            }
-                            else
-                            {
-                                // the intersection lies below the player
-                                if (player.Y + player.Height > b.Y && player.Y < b.Y)
-                                {
-                                    if (player.isJumping) player.isJumping = false;
-                                    player.Y = b.Y - player.Height;
-                                }
-                                // intersection is above player
-                                if (player.Y < b.Y + b.Height && player.Y + player.Height > b.Y)
-                                {
-                                    // Reset the jump velocity
-                                    player.JumpVel = 0;
-                                    player.Y = b.Y + b.Height;
-                                }
-                            }
-						}
-						else // if plank
-						{
-							if (player.JumpVel <= 0)
-							{// the intersection lies below the player
-								if (player.Y + player.Height > b.Y && player.Y < b.Y)
-								{
-									if (player.isJumping) player.isJumping = false;
-									player.Y = b.Y - player.Height;
-								}
-
-							}
-						}
-						// Check for side collision
-						if (intersect.Height > intersect.Width)
-						{
-							if (player.X + player.Width > b.X && player.X < b.X)
-							{
-								player.X = b.X - player.Width;
-							}
-							if (player.X + player.Width > b.X + b.Width && player.X < b.X + b.Width)
-							{
-								player.X = b.X + b.Height;
-							}
-						}
-					}
-				}
-			}
-			if (!collided) player.isJumping = true;
-
-			// Collision with pets
-			foreach (Animal p in animals)
-			{
-				Rectangle intersect = player.Intersect(p);
-				if (intersect.Width > 0 || intersect.Height > 0)
-				{
-					score += 1;
-					animals.Remove(p);
-					break;
-				}
-			}
 		}
 
 		protected override void Draw(GameTime gameTime)
@@ -275,6 +567,13 @@ namespace FunnelCake
 					{
 						if (b.Type == GOType.BSOLID) spriteBatch.Draw(blockSolid, b.Location, Color.White);
 						else if (b.Type == GOType.BPLANK) spriteBatch.Draw(blockPlank, b.Location, Color.White);
+                                            else if (b.Type == GOType.UP) spriteBatch.Draw(portalup, b.Location, Color.White);
+                                            else if (b.Type == GOType.DOWN) spriteBatch.Draw(portaldown, b.Location, Color.White);
+                                            else if (b.Type == GOType.LEFT) spriteBatch.Draw(portalleft, b.Location, Color.White);
+                                            else if (b.Type == GOType.RIGHT) spriteBatch.Draw(portalright, b.Location, Color.White);
+                                            else if (b.Type == GOType.OFF) spriteBatch.Draw(portaloff, b.Location, Color.White);
+                                            else if (b.Type == GOType.HALF) spriteBatch.Draw(portalhalf, b.Location, Color.White);
+                                            else if (b.Type == GOType.DOUBLE) spriteBatch.Draw(portaldouble, b.Location, Color.White);
 					}
 				}
 				spriteBatch.Draw(playerSprite, player.Location, Color.White);
@@ -289,8 +588,25 @@ namespace FunnelCake
 			base.Draw(gameTime);
 		}
 
+
+
 		private void loadLevel(int level)
 		{
+
+        /* 1 = up portal
+         * 2 = down portal
+         * 3 = left portal
+         * 4 = right portal
+         * 5 = half gravity portal
+         * 6 = double gravity portal
+         * 0 = off portal
+         * c = critter 1
+         * v = critter 2
+         * b = critter 3 ect.
+         * p = player
+         * x = platform
+         * = = plank (think platform)
+         */
 			System.IO.Stream stream = TitleContainer.OpenStream("Content/Levels/"+level+".txt");
 			System.IO.StreamReader sreader = new System.IO.StreamReader(stream);
 			string line;
@@ -301,8 +617,12 @@ namespace FunnelCake
 			{
 				for (int c = 0; c < line.Length; c++)
 				{
-					switch ((GOType)line.ElementAt<char>(c))
+                    GOType temp = (GOType)line.ElementAt<char>(c);
+					switch (temp)
 					{
+
+                        case GOType.EMPTY:
+                            break;
 						case GOType.BSOLID:
 							gameScreen[r, c] = new Tile(GOType.BSOLID, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
 							break;
@@ -318,7 +638,27 @@ namespace FunnelCake
 						case GOType.FLYER:
 							animals.Add(new Flyer(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM), FLYER_SPEED));
 							break;
-						case GOType.EMPTY:
+                        case GOType.UP:
+                            gameScreen[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                            break;
+                        case GOType.DOWN:
+                            gameScreen[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                            break;
+                        case GOType.LEFT:
+                            gameScreen[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                            break;
+                        case GOType.RIGHT:
+                            gameScreen[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                            break;
+                        case GOType.HALF:
+                            gameScreen[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                            break;
+                        case GOType.DOUBLE:
+                            gameScreen[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                            break;
+                        case GOType.OFF:
+                            gameScreen[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                            break;
 						default:
 							break;
 					}
