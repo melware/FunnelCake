@@ -238,7 +238,9 @@ namespace FunnelCake
                         if (b.Type == GOType.UP)
                         {
                             if (intersect.Width > BLOCK_DIM - PORTAL_COLLISION && intersect.Height > BLOCK_DIM - PORTAL_COLLISION)
+                            {
                                 player.pt1 = portalType1.UPSIDE;
+                            }
                         }
                         else if (b.Type == GOType.DOWN)
                         {
@@ -540,50 +542,57 @@ namespace FunnelCake
 						break;
 				}
 			}
-			else
-			{
-				// Draw the game objects
-				foreach (Crawler p in animals) spriteBatch.Draw(crawlerSprite, p.Location, Color.White);
-				foreach (Tile b in gameScreen)
-				{
-					if (b != null)
-					{
-						if (b.Type == GOType.BSOLID) spriteBatch.Draw(blockSolid, b.Location, Color.White);
-						else if (b.Type == GOType.BPLANK) spriteBatch.Draw(blockPlank, b.Location, Color.White);
-					}
-				}
-				spriteBatch.Draw(playerSprite, player.Location, Color.White);
-				// Score
-				spriteBatch.DrawString(subTitleFont, "" + score, Vector2.Zero, Color.White);
-				// Time left
-				spriteBatch.DrawString(subTitleFont, "" + countdown / 1000, new Vector2(950, 0), Color.White);
-			}
+        else
+        {
+            // Draw the game objects
+            foreach (Crawler p in animals) spriteBatch.Draw(crawlerSprite, p.Location, Color.White);
+            foreach (Tile b in gameScreen)
+            {
+                if (b != null)
+                {
+                    if (b.Type == GOType.BSOLID) spriteBatch.Draw(blockSolid, b.Location, Color.White);
+                    else if (b.Type == GOType.BPLANK) spriteBatch.Draw(blockPlank, b.Location, Color.White);
+                    else if (b.Type == GOType.UP) spriteBatch.Draw(portalup, b.Location, Color.White);
+                    else if (b.Type == GOType.DOWN) spriteBatch.Draw(portaldown, b.Location, Color.White);
+                    else if (b.Type == GOType.LEFT) spriteBatch.Draw(portalleft, b.Location, Color.White);
+                    else if (b.Type == GOType.RIGHT) spriteBatch.Draw(portalright, b.Location, Color.White);
+                    else if (b.Type == GOType.OFF) spriteBatch.Draw(portaloff, b.Location, Color.White);
+                    else if (b.Type == GOType.HALF) spriteBatch.Draw(portalhalf, b.Location, Color.White);
+                    else if (b.Type == GOType.DOUBLE) spriteBatch.Draw(portaldouble, b.Location, Color.White);
+                }
+            }
+            spriteBatch.Draw(playerSprite, player.Location, Color.White);
+            // Score
+            spriteBatch.DrawString(subTitleFont, "" + score, Vector2.Zero, Color.White);
+            // Time left
+            spriteBatch.DrawString(subTitleFont, "" + countdown / 1000, new Vector2(950, 0), Color.White);
+        }
 
-			spriteBatch.End();
+        spriteBatch.End();
 
-			base.Draw(gameTime);
-		}
+        base.Draw(gameTime);
+    }
 
 
 
-		private void loadLevel(int level)
-		{
+    private void loadLevel(int level)
+    {
 
-            /* 1 = up portal
-             * 2 = down portal
-             * 3 = left portal
-             * 4 = right portal
-             * 5 = half gravity portal
-             * 6 = double gravity portal
-             * 0 = off portal
-             * c = critter 1
-             * v = critter 2
-             * b = critter 3 ect.
-             * p = player
-             * x = platform
-             * = = plank (think platform)
-             */
-			System.IO.Stream stream = TitleContainer.OpenStream("Content/Levels/"+level+".txt");
+        /* 1 = up portal
+         * 2 = down portal
+         * 3 = left portal
+         * 4 = right portal
+         * 5 = half gravity portal
+         * 6 = double gravity portal
+         * 0 = off portal
+         * c = critter 1
+         * v = critter 2
+         * b = critter 3 ect.
+         * p = player
+         * x = platform
+         * = = plank (think platform)
+         */
+            System.IO.Stream stream = TitleContainer.OpenStream("Content/Levels/"+level+".txt");
 			System.IO.StreamReader sreader = new System.IO.StreamReader(stream);
 			string line;
 			int r = 0;
