@@ -366,15 +366,10 @@ namespace FunnelCake
                                     }
                                     else
                                     {
-                                        if (player.JumpVel <= 0)
-                                        {// the intersection lies below the player
-                                            if (player.Y < b.Y)
-                                            {
-                                                if (player.oldRec.Y + player.Height <= b.Y)
-                                                {
-                                                    player.Y = b.Y - player.Height;
-                                                }
-                                            }
+                                        if (player.oldRec.Y + player.Height <= b.Y)
+                                        if (player.Y < b.Y)
+                                        {
+                                            player.Y = b.Y - player.Height;
                                         }
                                     }
                                 }
@@ -421,17 +416,11 @@ namespace FunnelCake
                                     }
                                     else
                                     {
-                                        if (player.JumpVel <= 0)
-                                        {// the intersection lies below the player
-                                            if (player.Y < b.Y)//player.Y + player.Height > b.Y && 
+                                        if (player.oldRec.Y + player.Height <= b.Y)
+                                            if (player.Y < b.Y)
                                             {
-                                                if (player.oldRec.Y + player.Height <= b.Y)
-                                                {
-                                                    if (player.isJumping) player.isJumping = false;
-                                                    player.Y = b.Y - player.Height;
-                                                }
+                                                player.Y = b.Y - player.Height;
                                             }
-                                        }
                                     }
                                 }
                             }
@@ -479,17 +468,11 @@ namespace FunnelCake
                                     }
                                     else
                                     {
-                                        if (player.JumpVel <= 0)
-                                        {// the intersection lies below the player
-                                            if (player.Y < b.Y)//player.Y + player.Height > b.Y && 
+                                        if (player.oldRec.Y + player.Height <= b.Y)
+                                            if (player.Y < b.Y)
                                             {
-                                                if (player.oldRec.Y + player.Height <= b.Y)
-                                                {
-                                                    if (player.isJumping) player.isJumping = false;
-                                                    player.Y = b.Y - player.Height;
-                                                }
+                                                player.Y = b.Y - player.Height;
                                             }
-                                        }
                                     }
                                 }
                             }
