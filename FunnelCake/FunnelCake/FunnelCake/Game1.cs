@@ -142,12 +142,14 @@ namespace FunnelCake
 				foreach (Crawler e in animals) e.doWander(gameScreen);
 
                 handlePlayerMovement(curKey, gameTime);
-				handlePlayerCollisions();
+				handlePlatCollisions(player);
+                catchAnimal();
+                player.UpdateOldRec();
 				countdown -= gameTime.ElapsedGameTime.Milliseconds;
 			}
             
 
-            player.UpdateOldRec();
+            
             oldKey = curKey;
 			base.Update(gameTime);
 		}
@@ -159,7 +161,7 @@ namespace FunnelCake
 
             if (curKey.IsKeyDown(Keys.Left)) x -= PLAYER_SPEED;
             if (curKey.IsKeyDown(Keys.Right)) x += PLAYER_SPEED;
-            if (!player.isJumping && (curKey.IsKeyDown(Keys.Up) || curKey.IsKeyDown(Keys.Space)))
+            if (!player.isJumping && curKey.IsKeyDown(Keys.Up))
             {
                 player.isJumping = true;
                 player.JumpVel = PLAYER_JUMP;
@@ -207,7 +209,21 @@ namespace FunnelCake
             player.X = MathHelper.Clamp(player.X, 0, WIDTH - player.Width);
 
         }
-		private void handlePlayerCollisions()
+
+        private void catchAnimal()
+        {// Collision with pets
+			foreach (Crawler p in animals)
+			{
+				Rectangle intersect = player.Intersects(p);
+				if (intersect.Width > 0 || intersect.Height > 0)
+				{
+					score += 1;
+					animals.Remove(p);
+					break;
+				}
+			}
+        }
+		private void handlePlatCollisions(Player player)
 		{
 			bool collided = false;
 			// Collision with blocks
@@ -277,7 +293,7 @@ namespace FunnelCake
                                             player.Y = b.Y - player.Height;
                                         }
                                         // intersection is above player
-                                        if (player.Y + player.Height > b.Y)//player.Y < b.Y + b.Height && 
+                                        if (player.Y + player.Height > b.Y)
                                         {
                                             // Reset the jump velocity
                                             player.JumpVel = 0;
@@ -295,7 +311,7 @@ namespace FunnelCake
                                     {
                                         if (player.JumpVel <= 0)
                                         {// the intersection lies below the player
-                                            if (player.Y < b.Y)//player.Y + player.Height > b.Y && 
+                                            if (player.Y < b.Y)
                                             {
                                                 if (player.oldRec.Y + player.Height <= b.Y)
                                                 {
@@ -327,7 +343,7 @@ namespace FunnelCake
                                     {
 
                                         // the intersection lies below the player
-                                        if (player.X < b.X)//player.Y + player.Height > b.Y && 
+                                        if (player.X < b.X)
                                         {
 
                                             player.JumpVel = 0;
@@ -352,11 +368,10 @@ namespace FunnelCake
                                     {
                                         if (player.JumpVel <= 0)
                                         {// the intersection lies below the player
-                                            if (player.Y < b.Y)//player.Y + player.Height > b.Y && 
+                                            if (player.Y < b.Y)
                                             {
                                                 if (player.oldRec.Y + player.Height <= b.Y)
                                                 {
-                                                    if (player.isJumping) player.isJumping = false;
                                                     player.Y = b.Y - player.Height;
                                                 }
                                             }
@@ -430,7 +445,7 @@ namespace FunnelCake
 
                                     if (intersect.Height <= PLAYER_SPEED)
                                     {
-                                        if (player.Y > b.Y)
+                                        if (player.Y < b.Y)
                                             player.Y = b.Y - player.Height;
                                         else
                                             player.Y = b.Y + b.Height;
@@ -439,18 +454,20 @@ namespace FunnelCake
                                     {
 
                                         // the intersection lies below the player
-                                        if (player.X > b.X)//player.Y + player.Height > b.Y && 
+                                        if (player.X < b.X)//player.Y + player.Height > b.Y && 
                                         {
 
-                                            player.JumpVel = 0;
+                                            if (player.isJumping) player.isJumping = false;
                                             player.X = b.X - b.Width;
                                         }
                                         // intersection is above player
                                         if (player.X + player.Height > b.X)//player.Y < b.Y + b.Height && 
                                         {
                                             // Reset the jump velocity
-                                            if (player.isJumping) player.isJumping = false;
+                                            
                                             player.X = b.X + player.Width;
+
+                                            player.JumpVel = 0;
                                         }
                                     }
                                 }
@@ -464,9 +481,9 @@ namespace FunnelCake
                                     {
                                         if (player.JumpVel <= 0)
                                         {// the intersection lies below the player
-                                            if (player.Y > b.Y)//player.Y + player.Height > b.Y && 
+                                            if (player.Y < b.Y)//player.Y + player.Height > b.Y && 
                                             {
-                                                if (player.oldRec.Y + player.Height >= b.Y)
+                                                if (player.oldRec.Y + player.Height <= b.Y)
                                                 {
                                                     if (player.isJumping) player.isJumping = false;
                                                     player.Y = b.Y - player.Height;
@@ -513,18 +530,7 @@ namespace FunnelCake
                     }
                 }
             }
-
-			// Collision with pets
-			foreach (Crawler p in animals)
-			{
-				Rectangle intersect = player.Intersects(p);
-				if (intersect.Width > 0 || intersect.Height > 0)
-				{
-					score += 1;
-					animals.Remove(p);
-					break;
-				}
-			}
+			
 		}
 
 		protected override void Draw(GameTime gameTime)
