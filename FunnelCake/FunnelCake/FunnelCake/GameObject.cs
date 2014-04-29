@@ -63,11 +63,17 @@ namespace FunnelCake
 		public int Width { get { return boundBox.Width; } set { boundBox.Width = value; } }
 		public int Height { get { return boundBox.Height; } set { boundBox.Height = value; } }
 
-		public virtual Rectangle Intersects(GameObject otherObj)
+		public virtual Rectangle Intersect(GameObject otherObj)
 		{
 			Rectangle me = new Rectangle((int)X, (int)Y, Width, Height);
 			Rectangle other = new Rectangle((int)otherObj.X, (int)otherObj.Y, otherObj.Width, otherObj.Height);
 			return Rectangle.Intersect(me, other);
+		}
+		public bool Intersects(GameObject otherObj)
+		{
+			Rectangle me = new Rectangle((int)X, (int)Y, Width, Height);
+			Rectangle other = new Rectangle((int)otherObj.X, (int)otherObj.Y, otherObj.Width, otherObj.Height);
+			return me.Intersects(other);
 		}
 	}
 }
