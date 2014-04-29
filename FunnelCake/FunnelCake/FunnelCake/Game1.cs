@@ -31,11 +31,11 @@ namespace FunnelCake
 		const int MAX_LEVELS = 2;
 
 		// Screen size
-		const int HEIGHT = 750;
-		const int WIDTH = 1000;
-		const int ROWS = 15;
-		const int COLS = 20;
-		const int BLOCK_DIM = 50;   // Block dimension in pixels (width == height)
+		public const int HEIGHT = 750;
+		public const int WIDTH = 1000;
+		public const int ROWS = 15;
+		public const int COLS = 20;
+		public const int BLOCK_DIM = 50;   // Block dimension in pixels (width == height)
 
 		enum GameState { START, PLAY, LOSE, WIN };
 		GameState gameState;
@@ -47,14 +47,16 @@ namespace FunnelCake
 
 		Texture2D blockSolid;
 		Texture2D blockPlank	;
-		Texture2D crawlerSprite	;
+		Texture2D crawlerSprite;
+		Texture2D flyerSprite;
 		Texture2D playerSprite	;
 
 		// Fonts
 		SpriteFont titleFont;
 		SpriteFont subTitleFont;
 
-		Vector2 CRAWLER_SPEED = new Vector2(2,0);
+		Vector2 CRAWLER_SPEED = new Vector2(2, 0);
+		Vector2 FLYER_SPEED = new Vector2(2, 2);
 
 		const float PLAYER_SPEED = 4;
 		const float PLAYER_JUMP = 350 / 0.5f; // jump height / time to reach height
@@ -88,8 +90,9 @@ namespace FunnelCake
 			spriteBatch = new SpriteBatch(GraphicsDevice);
 
 			blockSolid		= Content.Load<Texture2D>(@"Sprites/block_solid");
-			blockPlank		= Content.Load<Texture2D>(@"Sprites/block_plank");
-			crawlerSprite	= Content.Load<Texture2D>(@"Sprites/pet");
+			blockPlank = Content.Load<Texture2D>(@"Sprites/block_plank");
+			crawlerSprite = Content.Load<Texture2D>(@"Sprites/pet");
+			flyerSprite = Content.Load<Texture2D>(@"Sprites/pet");
 			playerSprite	= Content.Load<Texture2D>(@"Sprites/player");
 			loadLevel(1);
 
@@ -137,7 +140,15 @@ namespace FunnelCake
 				}
 				player.X = MathHelper.Clamp(player.X, 0, WIDTH - player.Width);
 				// Move automated objects
-				foreach (Crawler e in animals) e.doWander(gameScreen);
+				Random rand = new Random();
+				foreach (Animal e in animals)
+				{
+					if (e.Type == GOType.CRAWLER) e.doWander(gameScreen);
+					else if (e.Type == GOType.FLYER)
+					{
+						e.doWander(gameScreen, rand);
+					}
+				}
 
 				handlePlayerCollisions();
 				countdown -= gameTime.ElapsedGameTime.Milliseconds;
@@ -153,7 +164,7 @@ namespace FunnelCake
 			{
 				if (b != null)
 				{
-					Rectangle intersect = player.Intersects(b);
+					Rectangle intersect = player.Intersect(b);
 					if (intersect.Width > 0 || intersect.Height > 0)
 					{
 						collided = true;
@@ -214,9 +225,9 @@ namespace FunnelCake
 			if (!collided) player.isJumping = true;
 
 			// Collision with pets
-			foreach (Crawler p in animals)
+			foreach (Animal p in animals)
 			{
-				Rectangle intersect = player.Intersects(p);
+				Rectangle intersect = player.Intersect(p);
 				if (intersect.Width > 0 || intersect.Height > 0)
 				{
 					score += 1;
@@ -244,7 +255,7 @@ namespace FunnelCake
 						spriteBatch.DrawString(titleFont, "GAME OVER", Vector2.Zero, Color.White);
 						break;
 					case GameState.WIN:
-						spriteBatch.DrawString(titleFont, "You win!", Vector2.Zero, Color.White);
+						spriteBatch.DrawString(titleFont, "FIN.\n You scored " + score+"!", Vector2.Zero, Color.White);
 						break;
 					default:
 						break;
@@ -253,7 +264,11 @@ namespace FunnelCake
 			else
 			{
 				// Draw the game objects
-				foreach (Crawler p in animals) spriteBatch.Draw(crawlerSprite, p.Location, Color.White);
+				foreach (Animal p in animals)
+				{
+					if(p.Type == GOType.CRAWLER) spriteBatch.Draw(crawlerSprite, p.Location, Color.White);
+					else if (p.Type == GOType.FLYER) spriteBatch.Draw(crawlerSprite, p.Location, Color.White);
+				}
 				foreach (Tile b in gameScreen)
 				{
 					if (b != null)
@@ -298,7 +313,10 @@ namespace FunnelCake
 							player = new Player(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
 							break;
 						case GOType.CRAWLER:
-							animals.Add(new Crawler(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM),CRAWLER_SPEED));
+							animals.Add(new Crawler(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM), CRAWLER_SPEED));
+							break;
+						case GOType.FLYER:
+							animals.Add(new Flyer(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM), FLYER_SPEED));
 							break;
 						case GOType.EMPTY:
 						default:
