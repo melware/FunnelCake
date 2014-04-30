@@ -15,7 +15,9 @@ namespace FunnelCake
 	abstract class Animal : Player
 	{
 		public Vector2 velocity;
-		
+		public Vector2 direction; // This should stay a unit vector
+		protected static float viewRadius;
+		protected static float separationRadius;
 
 		public Animal(Rectangle bound, float vel)
 			: base(bound, vel)
@@ -26,12 +28,32 @@ namespace FunnelCake
 
 		public virtual void doWander(Tile[,] gameScreen, Random rand = null) { }
 
-		
+		/// <summary>
+		/// Returns the neighbors within the viewing range of an Animal
+		/// </summary>
+		private ICollection<Animal> getNeighbors(ICollection<Animal> flock)
+		{
+			ICollection<Animal> neighs = new List<Animal>();
+			foreach (Animal a in flock)
+			{
+				if (Vector2.Distance(a.Location, this.Location) <= viewRadius)
+				{
+					neighs.Add(a);
+				}
+			}
+			return neighs;
+		}
+
+		private ICollection<GameObject> getNearbyBlocks(ICollection<GameObject> map)
+		{
+
+		}
 	}
 
 	class Crawler : Animal
 	{
 		protected Rectangle walkingBox; // For detecting ground to wander on
+
 		public Crawler(Rectangle bound, float vel)
 			: base(bound, vel)  // Make sure the Y-velocity remains zero
 		{
@@ -79,7 +101,7 @@ namespace FunnelCake
 			wanderDir = new Vector2((float)rand.NextDouble()*2-1.5f, (float)rand.NextDouble()*2-1.5f);
 			if(wanderDir != Vector2.Zero) wanderDir.Normalize();
 			velocity = new Vector2(vel, vel);
-			VIEW_RADIUS = 2 * Game1.BLOCK_DIM;
+			viewRadius = 2 * Game1.BLOCK_DIM;
 		}
 
 		public override GOType Type { get { return GOType.FLYER; } }
