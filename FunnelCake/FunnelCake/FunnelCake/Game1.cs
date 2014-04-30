@@ -196,7 +196,7 @@ namespace FunnelCake
 					Rectangle intersect = player.Intersect(b);
 					if (intersect.Width > 0 || intersect.Height > 0)
 					{
-						collided = true;
+						
                         if (b.Type == GOType.UP)
                         {
                             if (intersect.Width > BLOCK_DIM - PORTAL_COLLISION && intersect.Height > BLOCK_DIM - PORTAL_COLLISION)
@@ -231,7 +231,7 @@ namespace FunnelCake
                         }
                         else
                         {
-
+                            collided = true;
                             //Where portal types start deciding things
                             //////////////////////////////////////////////////////////////////
                             ///////////////////NORMAL/////////////////////////////////////////
@@ -243,10 +243,17 @@ namespace FunnelCake
 
                                     if (intersect.Width <= PLAYER_SPEED)
                                     {
-                                        if (player.X < b.X)
-                                            player.X = b.X - player.Width;
-                                        else
-                                            player.X = b.X + b.Width;
+                                        if (!(player.oldRec.Y + player.Height<= b.Y))
+                                        {
+                                            if (player.X < b.X)
+                                            {
+                                                player.X = b.X - player.Width;
+                                            }
+                                            else
+                                            {
+                                                player.X = b.X + b.Width;
+                                            }
+                                        }
                                     }
                                     else
                                     {
