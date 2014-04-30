@@ -26,7 +26,7 @@ namespace FunnelCake
 
 		public virtual void doWander(Tile[,] gameScreen, Random rand = null) { }
 
-		}
+		
 	}
 
 	class Crawler : Animal
