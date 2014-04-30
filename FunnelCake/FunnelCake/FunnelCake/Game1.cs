@@ -37,6 +37,7 @@ namespace FunnelCake
 		public const int ROWS = 15;
 		public const int COLS = 20;
 		public const int BLOCK_DIM = 50;   // Block dimension in pixels (width == height)
+        public const int HALF_BLOCK_DIM = 25;
         const int PORTAL_COLLISION = 6;
 
 		enum GameState { START, PLAY, LOSE, WIN };
@@ -574,25 +575,48 @@ namespace FunnelCake
 				// Draw the game objects
 				foreach (Animal p in animals)
 				{
-					if(p.Type == GOType.CRAWLER) spriteBatch.Draw(crawlerSprite, p.Location, Color.White);
-					else if (p.Type == GOType.FLYER) spriteBatch.Draw(crawlerSprite, p.Location, Color.White);
+                    float rotation = 0;
+                    if (player.pt1 == portalType1.NORMAL)
+                        rotation = 0;
+                    else if (player.pt1 == portalType1.RIGHTSIDE)
+                        rotation = MathHelper.PiOver2;
+                    else if (player.pt1 == portalType1.UPSIDE)
+                        rotation = MathHelper.Pi;
+                    else if (player.pt1 == portalType1.LEFTSIDE)
+                        rotation = MathHelper.Pi + MathHelper.PiOver2;
+                    if (p.Type == GOType.CRAWLER) spriteBatch.Draw(crawlerSprite, new Vector2(p.Location.X + HALF_BLOCK_DIM, p.Location.Y + HALF_BLOCK_DIM),
+                                                                    null, Color.White, rotation, new Vector2(HALF_BLOCK_DIM, HALF_BLOCK_DIM), 1, SpriteEffects.None, 0);
+                    else if (p.Type == GOType.FLYER) spriteBatch.Draw(crawlerSprite, new Vector2(p.Location.X + HALF_BLOCK_DIM, p.Location.Y + HALF_BLOCK_DIM),
+                                                                    null, Color.White, rotation, new Vector2(HALF_BLOCK_DIM, HALF_BLOCK_DIM), 1, SpriteEffects.None, 0);
 				}
 				foreach (Tile b in gameScreen)
 				{
-					if (b != null)
-					{
-						if (b.Type == GOType.BSOLID) spriteBatch.Draw(blockSolid, b.Location, Color.White);
-						else if (b.Type == GOType.BPLANK) spriteBatch.Draw(blockPlank, b.Location, Color.White);
-                                            else if (b.Type == GOType.UP) spriteBatch.Draw(portalup, b.Location, Color.White);
-                                            else if (b.Type == GOType.DOWN) spriteBatch.Draw(portaldown, b.Location, Color.White);
-                                            else if (b.Type == GOType.LEFT) spriteBatch.Draw(portalleft, b.Location, Color.White);
-                                            else if (b.Type == GOType.RIGHT) spriteBatch.Draw(portalright, b.Location, Color.White);
-                                            else if (b.Type == GOType.OFF) spriteBatch.Draw(portaloff, b.Location, Color.White);
-                                            else if (b.Type == GOType.HALF) spriteBatch.Draw(portalhalf, b.Location, Color.White);
-                                            else if (b.Type == GOType.DOUBLE) spriteBatch.Draw(portaldouble, b.Location, Color.White);
+					if (b != null)                                                                   
+					{                                                                                
+						if (b.Type == GOType.BSOLID)        spriteBatch.Draw(blockSolid, b.Location, Color.White)  ;
+						else if (b.Type == GOType.BPLANK)   spriteBatch.Draw(blockPlank, b.Location, Color.White)  ;
+                        else if (b.Type == GOType.UP)       spriteBatch.Draw(portalup,   b.Location, Color.White)  ;
+                        else if (b.Type == GOType.DOWN)     spriteBatch.Draw(portaldown, b.Location, Color.White)  ;
+                        else if (b.Type == GOType.LEFT)     spriteBatch.Draw(portalleft, b.Location, Color.White)  ;
+                        else if (b.Type == GOType.RIGHT)    spriteBatch.Draw(portalright,b.Location, Color.White)  ;
+                        else if (b.Type == GOType.OFF)      spriteBatch.Draw(portaloff,  b.Location, Color.White)  ;
+                        else if (b.Type == GOType.HALF)     spriteBatch.Draw(portalhalf, b.Location, Color.White)  ;
+                        else if (b.Type == GOType.DOUBLE)   spriteBatch.Draw(portaldouble, b.Location, Color.White);
 					}
 				}
-				spriteBatch.Draw(playerSprite, player.Location, Color.White);
+                float rotationp = 0;
+                if (player.pt1 == portalType1.NORMAL)
+                    rotationp = 0;
+                else if (player.pt1 == portalType1.RIGHTSIDE)
+                    rotationp = MathHelper.PiOver2;
+                else if (player.pt1 == portalType1.UPSIDE)
+                    rotationp = MathHelper.Pi;
+                else if (player.pt1 == portalType1.LEFTSIDE)
+                    rotationp = MathHelper.Pi + MathHelper.PiOver2;
+                spriteBatch.Draw(playerSprite, new Vector2 (player.Location.X + player.Width/2, player.Location.Y + player.Height/2),
+                                null, Color.White, rotationp, new Vector2(player.Width/2, player.Height/2), 1, SpriteEffects.None, 0);
+
+
 				// Score
 				spriteBatch.DrawString(subTitleFont, "" + score, Vector2.Zero, Color.White);
 				// Time left

@@ -22,7 +22,7 @@ namespace FunnelCake
 			curJumpVel = 0;
             oldRec = bound;
             holdingUp = false;
-            pt1 = portalType1.RIGHTSIDE;
+            pt1 = portalType1.NORMAL;
             pt2 = portalType2.NORMAL;
 		}
 
