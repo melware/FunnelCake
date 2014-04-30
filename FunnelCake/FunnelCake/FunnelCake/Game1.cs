@@ -305,10 +305,13 @@ namespace FunnelCake
 
                                     if (intersect.Height <= PLAYER_SPEED)
                                     {
-                                        if (player.Y < b.Y)
-                                            player.Y = b.Y - player.Height;
-                                        else
-                                            player.Y = b.Y + b.Height;
+                                        if (!(player.oldRec.X >= b.X + b.Width))
+                                        {
+                                            if (player.Y < b.Y)
+                                                player.Y = b.Y - player.Height;
+                                            else
+                                                player.Y = b.Y + b.Height;
+                                        }
                                     }
                                     else
                                     {
@@ -355,10 +358,13 @@ namespace FunnelCake
 
                                     if (intersect.Width <= PLAYER_SPEED)
                                     {
-                                        if (player.X < b.X)
-                                            player.X = b.X - player.Width;
-                                        else
-                                            player.X = b.X + b.Width;
+                                        if(!(player.oldRec.Y >= b.Y + b.Height))
+                                        {
+                                            if (player.X < b.X)
+                                                player.X = b.X - player.Width;
+                                            else
+                                                player.X = b.X + b.Width;
+                                        }
                                     }
                                     else
                                     {
@@ -405,10 +411,13 @@ namespace FunnelCake
 
                                     if (intersect.Height <= PLAYER_SPEED)
                                     {
-                                        if (player.Y < b.Y)
-                                            player.Y = b.Y - player.Height;
-                                        else
-                                            player.Y = b.Y + b.Height;
+                                        if (!(player.X + player.Width <= b.X))
+                                        {
+                                            if (player.Y < b.Y)
+                                                player.Y = b.Y - player.Height;
+                                            else
+                                                player.Y = b.Y + b.Height;
+                                        }
                                     }
                                     else
                                     {
