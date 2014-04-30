@@ -12,31 +12,36 @@ using Microsoft.Xna.Framework.Media;
 
 namespace FunnelCake
 {
-	abstract class Animal : GameObject
+	abstract class Animal : Player
 	{
+		public Vector2 velocity;
+		
 
-		protected Vector2 velocity;
-		public Animal(Rectangle bound, Vector2 vel)
-			: base(bound)
+		public Animal(Rectangle bound, float vel)
+			: base(bound, vel)
 		{
-			velocity = vel;
+			pt1 = portalType1.NORMAL;
+			pt2 = portalType2.NORMAL;
 		}
-		public virtual void doWander(Tile[,] gameScreen) { }
-		public virtual void doWander(Tile[,] gameScreen, Random rand) { }
+
+		public virtual void doWander(Tile[,] gameScreen, Random rand = null) { }
+
+		}
 	}
 
 	class Crawler : Animal
 	{
 		protected Rectangle walkingBox; // For detecting ground to wander on
-		public Crawler(Rectangle bound, Vector2 vel)
-			: base(bound, new Vector2(vel.X, 0))  // Make sure the Y-velocity remains zero
+		public Crawler(Rectangle bound, float vel)
+			: base(bound, vel)  // Make sure the Y-velocity remains zero
 		{
 			// Create a box right below the sprite to find ground
 			walkingBox = new Rectangle((int)(base.X + base.Width), (int)(base.Y + base.Height), (int)base.Width, 1);
+			velocity = new Vector2(vel,0);
 		}
 		public override GOType Type { get { return GOType.CRAWLER; } }
 
-		public override void doWander(Tile[,] gameScreen)
+		public override void doWander(Tile[,] gameScreen, Random rand = null)
 		{
 			base.X += velocity.X; walkingBox.X = (int)base.X;
 			int intersectedWidth = 0;
@@ -62,53 +67,26 @@ namespace FunnelCake
 		}
 	}
 
-	//// Animal that flocks as well
-	//class Jumper : Animal
-	//{
-	//    bool jumpState;
-	//    float curJumpVel;
-
-	//    public Jumper(Rectangle bound, Vector2 vel)
-	//        : base(bound, vel) 
-	//    {
-	//        jumpState = false;
-	//        curJumpVel = 0;
-	//    }
-
-	//    // Flock algorithm
-	//    public override void doWander(Tile[,] gameScreen) 
-	//    {
-			
-	//    }
-
-	//    public bool isJumping
-	//    {
-	//        get { return jumpState; }
-	//        set { jumpState = value; if (!jumpState) curJumpVel = 0; }
-	//    }
-	//    public float JumpVel
-	//    {
-	//        get { return curJumpVel; }
-	//        set { curJumpVel = value; }
-	//    }
-	//}
-
 	// Animal that flocks
 	class Flyer : Animal
 	{
 		public Vector2 wanderDir;
 
-		public Flyer(Rectangle bound, Vector2 vel)
+		public Flyer(Rectangle bound, float vel)
 			: base(bound, vel) 
 		{
 			Random rand = new Random();
 			wanderDir = new Vector2((float)rand.NextDouble()*2-1.5f, (float)rand.NextDouble()*2-1.5f);
 			if(wanderDir != Vector2.Zero) wanderDir.Normalize();
+			velocity = new Vector2(vel, vel);
+			VIEW_RADIUS = 2 * Game1.BLOCK_DIM;
 		}
 
 		public override GOType Type { get { return GOType.FLYER; } }
 
-		public override void doWander(Tile[,] gameScreen, Random rand)
+
+
+		public override void doWander(Tile[,] gameScreen, Random rand = null)
 		{
 			Vector2 tmpWanderDir;
 			float tmpX;
@@ -162,6 +140,38 @@ namespace FunnelCake
 			boundBox.Y = (int)MathHelper.Clamp(tmpY, 0, Game1.HEIGHT-boundBox.Height-Game1.BLOCK_DIM);
 
 		}
+
+
+		//// Animal that flocks as well
+		//class Jumper : Animal
+		//{
+		//    bool jumpState;
+		//    float curJumpVel;
+
+		//    public Jumper(Rectangle bound, Vector2 vel)
+		//        : base(bound, vel) 
+		//    {
+		//        jumpState = false;
+		//        curJumpVel = 0;
+		//    }
+
+		//    // Flock algorithm
+		//    public override void doWander(Tile[,] gameScreen) 
+		//    {
+
+		//    }
+
+		//    public bool isJumping
+		//    {
+		//        get { return jumpState; }
+		//        set { jumpState = value; if (!jumpState) curJumpVel = 0; }
+		//    }
+		//    public float JumpVel
+		//    {
+		//        get { return curJumpVel; }
+		//        set { curJumpVel = value; }
+		//    }
+		//}
 	}
 
 }
