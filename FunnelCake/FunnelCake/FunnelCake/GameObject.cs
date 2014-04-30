@@ -14,7 +14,7 @@ namespace FunnelCake
         PLAYER = 'p',
         CRAWLER = 'c', FLYER = 'f',
         UP = '1', DOWN = '2', LEFT = '3', RIGHT = '4',
-        HALF = '6', DOUBLE = '7', OFF = '0'
+        HALF = '5', DOUBLE = '6', NORMAL = '7', OFF = '0'
     };
 
     enum portalType1 { NORMAL, UPSIDE, LEFTSIDE, RIGHTSIDE };

@@ -54,7 +54,7 @@ namespace FunnelCake
 		Texture2D flyerSprite;
 
         Texture2D portaloff, portalup, portaldown, portalleft, 
-            portalright, portalhalf, portaldouble;
+            portalright, portalhalf, portaldouble, portalnormal;
 		Texture2D playerSprite	;
 
 		// Fonts
@@ -114,6 +114,7 @@ namespace FunnelCake
             portaldown     = Content.Load<Texture2D>(@"Sprites/portaldown");
             portalhalf     = Content.Load<Texture2D>(@"Sprites/portalhalf");
             portaldouble = Content.Load<Texture2D>(@"Sprites/portaldouble");
+            portalnormal = Content.Load<Texture2D>(@"Sprites/portalneutral");
 
 		}
         private void handlePlayerMovement(KeyboardState curKey, GameTime gameTime)
@@ -141,7 +142,7 @@ namespace FunnelCake
                 if (player.pt2 == portalType2.NORMAL)
                     player.JumpVel -= GRAVITY * (float)gameTime.ElapsedGameTime.TotalSeconds;
                 else if (player.pt2 == portalType2.HALF)
-                    player.JumpVel -= (GRAVITY / 2) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    player.JumpVel -= (GRAVITY / 2.5f) * (float)gameTime.ElapsedGameTime.TotalSeconds;
                 else if (player.pt2 == portalType2.DOUBLE)
                     player.JumpVel -= GRAVITY * 2 * (float)gameTime.ElapsedGameTime.TotalSeconds;
                 y -= player.JumpVel * (float)gameTime.ElapsedGameTime.TotalSeconds;
@@ -197,8 +198,12 @@ namespace FunnelCake
 					Rectangle intersect = player.Intersect(b);
 					if (intersect.Width > 0 || intersect.Height > 0)
 					{
-						
-                        if (b.Type == GOType.UP)
+                        if (b.Type == GOType.NORMAL)
+                        {
+                            if (intersect.Width > BLOCK_DIM - PORTAL_COLLISION && intersect.Height > BLOCK_DIM - PORTAL_COLLISION)
+                                player.pt2 = portalType2.NORMAL;
+                        }
+                        else if (b.Type == GOType.UP)
                         {
                             if (intersect.Width > BLOCK_DIM - PORTAL_COLLISION && intersect.Height > BLOCK_DIM - PORTAL_COLLISION)
                             {
@@ -244,7 +249,7 @@ namespace FunnelCake
 
                                     if (intersect.Width <= PLAYER_SPEED)
                                     {
-                                        if (!(player.oldRec.Y + player.Height<= b.Y))
+                                        if (!(player.oldRec.Y + player.Height <= b.Y))
                                         {
                                             if (player.X < b.X)
                                             {
@@ -342,10 +347,10 @@ namespace FunnelCake
                                     else
                                     {
                                         if (player.oldRec.Y + player.Height <= b.Y)
-                                        if (player.Y < b.Y)
-                                        {
-                                            player.Y = b.Y - player.Height;
-                                        }
+                                            if (player.Y < b.Y)
+                                            {
+                                                player.Y = b.Y - player.Height;
+                                            }
                                     }
                                 }
                             }
@@ -359,7 +364,7 @@ namespace FunnelCake
 
                                     if (intersect.Width <= PLAYER_SPEED)
                                     {
-                                        if(!(player.oldRec.Y >= b.Y + b.Height))
+                                        if (!(player.oldRec.Y >= b.Y + b.Height))
                                         {
                                             if (player.X < b.X)
                                                 player.X = b.X - player.Width;
@@ -434,7 +439,7 @@ namespace FunnelCake
                                         if (player.X + player.Height > b.X)//player.Y < b.Y + b.Height && 
                                         {
                                             // Reset the jump velocity
-                                            
+
                                             player.X = b.X + player.Width;
 
                                             player.JumpVel = 0;
@@ -601,7 +606,8 @@ namespace FunnelCake
                         else if (b.Type == GOType.RIGHT)    spriteBatch.Draw(portalright,b.Location, Color.White)  ;
                         else if (b.Type == GOType.OFF)      spriteBatch.Draw(portaloff,  b.Location, Color.White)  ;
                         else if (b.Type == GOType.HALF)     spriteBatch.Draw(portalhalf, b.Location, Color.White)  ;
-                        else if (b.Type == GOType.DOUBLE)   spriteBatch.Draw(portaldouble, b.Location, Color.White);
+                        else if (b.Type == GOType.DOUBLE) spriteBatch.Draw(portaldouble, b.Location, Color.White);
+                        else if (b.Type == GOType.NORMAL) spriteBatch.Draw(portalnormal, b.Location, Color.White);
 					}
 				}
                 float rotationp = 0;
@@ -639,6 +645,7 @@ namespace FunnelCake
          * 4 = right portal
          * 5 = half gravity portal
          * 6 = double gravity portal
+         * 7 = normal portal
          * 0 = off portal
          * c = critter 1
          * v = critter 2
@@ -697,6 +704,9 @@ namespace FunnelCake
                             gameScreen[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
                             break;
                         case GOType.OFF:
+                            gameScreen[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                            break;
+                        case GOType.NORMAL:
                             gameScreen[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
                             break;
 						default:
