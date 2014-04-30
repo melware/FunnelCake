@@ -32,11 +32,11 @@ namespace FunnelCake
 		const int MAX_LEVELS = 2;
 
 		// Screen size
-		public const int HEIGHT = 750;
-		public const int WIDTH = 1000;
-		public const int ROWS = 15;
-		public const int COLS = 20;
-		public const int BLOCK_DIM = 50;   // Block dimension in pixels (width == height)
+		public static int HEIGHT = 750;
+		public static int WIDTH = 1000;
+		public static int ROWS = 15;
+		public static int COLS = 20;
+		public static int BLOCK_DIM = 50;   // Block dimension in pixels (width == height)
         const int PORTAL_COLLISION = 6;
 
 		enum GameState { START, PLAY, LOSE, WIN };
@@ -81,6 +81,7 @@ namespace FunnelCake
 
 		protected override void Initialize()
 		{
+			IsMouseVisible = true;
 			gameState = GameState.START;
 			gameScreen = new Tile[ROWS, COLS];
 			animals = new List<Animal>();
