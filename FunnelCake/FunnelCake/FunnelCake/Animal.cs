@@ -23,16 +23,22 @@ namespace FunnelCake
 		protected static float HUMAN_WT;
 		protected static float BLOCK_WT;
 		public bool flee;
+		protected static float fleeMultiplier = 2;
+
+		protected Rectangle walkingBox; // For detecting ground to wander on
 
 		public Animal(Rectangle bound, float vel)
 			: base(bound, vel)
 		{
+			// Create a box right below the sprite to find ground
+			walkingBox = new Rectangle((int)(base.X), (int)(base.Y + base.Height), (int)base.Width, 1);
+
 			pt1 = portalType1.NORMAL;
 			pt2 = portalType2.NORMAL;
 			flee = false;
 		}
 
-		public virtual void doWander(Tile[,] gameScreen, List<Animal> flock = null, Player player = null) { }
+		public virtual void doWander(Tile[,] gameScreen, List<Animal> flock = null, Player player = null, GameTime gameTime = null) { }
 
 
 		///// <summary>
@@ -83,18 +89,15 @@ namespace FunnelCake
 
 	class Crawler : Animal
 	{
-		protected Rectangle walkingBox; // For detecting ground to wander on
 
 		public Crawler(Rectangle bound, float vel)
-			: base(bound, vel)  // Make sure the Y-velocity remains zero
+			: base(bound, vel)  
 		{
-			// Create a box right below the sprite to find ground
-			walkingBox = new Rectangle((int)(base.X + base.Width), (int)(base.Y + base.Height), (int)base.Width, 1);
 			velocity = new Vector2(vel,0);
 		}
 		public override GOType Type { get { return GOType.CRAWLER; } }
 
-		public override void doWander(Tile[,] gameScreen, List<Animal> flock = null, Player player = null)
+		public override void doWander(Tile[,] gameScreen, List<Animal> flock = null, Player player = null, GameTime gameTime = null)
 		{
 			base.X += velocity.X; walkingBox.X = (int)base.X;
 			int intersectedWidth = 0;
@@ -118,6 +121,66 @@ namespace FunnelCake
 		{
 			Rectangle other = new Rectangle((int)otherObj.X, (int)otherObj.Y, otherObj.Width, otherObj.Height);
 			return Rectangle.Intersect(walkingBox, other);
+		}
+	}
+
+	class Jumper : Animal
+	{
+		public Jumper(Rectangle bound, float vel)
+			: base(bound, vel)
+		{
+			isJumping = false;
+			JumpVel = 0;
+			VIEW_RADIUS = 2 * Game1.BLOCK_DIM;
+			velocity = new Vector2(1, 0);
+		}
+
+		public override GOType Type { get { return GOType.JUMPER; } }
+
+		// Flock algorithm
+		public override void doWander(Tile[,] gameScreen, List<Animal> animals, Player player, GameTime gameTime)
+		{
+			if (Vector2.Distance(player.Origin, this.Origin) < VIEW_RADIUS)
+			{
+				flee = true;
+				if (!isJumping)
+				{
+					isJumping = true;
+					JumpVel = Game1.PLAYER_JUMP*2/3;
+				}
+				velocity.X = this.Origin.X - player.Origin.X;
+				if (!velocity.Equals(Vector2.Zero)) velocity.Normalize();
+			}
+			this.X += velocity.X * speed * (flee ? fleeMultiplier : 1);
+
+			// Wandering 
+			int intersectedWidth = 0;
+			Rectangle tempRec = new Rectangle((int)(base.X), (int)(base.Y + base.Height), (int)base.Width, 1);
+			tempRec.Height += 1;
+			foreach (Tile b in gameScreen)
+			{
+				if (b != null)
+				{
+					Rectangle intersect = Rectangle.Intersect(b.boundBox, tempRec); 
+					if (intersect.Width > 0) intersectedWidth += intersect.Width;
+				}
+			}
+			if (intersectedWidth != 0 && intersectedWidth < this.Width)
+			{
+				velocity.X *= -1;
+			}
+			this.UpdateOldRec();
+			if (isJumping)
+			{
+				if (this.pt2 == portalType2.NORMAL)
+					this.JumpVel -= (Game1.GRAVITY * (float)gameTime.ElapsedGameTime.TotalSeconds) + 4;
+				else if (this.pt2 == portalType2.HALF)
+					this.JumpVel -= (Game1.GRAVITY / 2.4f) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+				else if (this.pt2 == portalType2.DOUBLE)
+					this.JumpVel -= (Game1.GRAVITY * 1.5f * (float)gameTime.ElapsedGameTime.TotalSeconds) + 5;
+				this.Y -= this.JumpVel * (float)gameTime.ElapsedGameTime.TotalSeconds;
+			}
+			flee = false;
 		}
 	}
 
@@ -146,7 +209,7 @@ namespace FunnelCake
 
 		public override GOType Type { get { return GOType.FLYER; } }
 
-		public override void doWander(Tile[,] gameScreen, List<Animal> flock, Player player)
+		public override void doWander(Tile[,] gameScreen, List<Animal> flock, Player player, GameTime gameTime = null)
 		{
 			List<Animal> neighbors = getNeighbors(this, flock);
 			List<Tile> blocks = getNearbyBlocks(this, gameScreen);
@@ -243,13 +306,9 @@ namespace FunnelCake
 			if(!velocity.Equals(Vector2.Zero))velocity.Normalize();
 
 			//Console.WriteLine("Before: " + k + "; After: " + velocity.X + ", " + velocity.Y);
-
-			float fleeMultiplier = 1;
-
-			if (flee) fleeMultiplier = 2;
-
-			boundBox.X += (int)((velocity.X) * speed * fleeMultiplier);
-			boundBox.Y += (int)((velocity.Y) * speed * fleeMultiplier);
+			
+			boundBox.X += (int)((velocity.X) * speed * (flee ? fleeMultiplier : 1));
+			boundBox.Y += (int)((velocity.Y) * speed * (flee ? fleeMultiplier : 1));
 			flee = false;
 
 			// Keep from flying off the screen
@@ -265,37 +324,6 @@ namespace FunnelCake
 			
 		}
 
-
-		//// Animal that flocks as well
-		//class Jumper : Animal
-		//{
-		//    bool jumpState;
-		//    float curJumpVel;
-
-		//    public Jumper(Rectangle bound, Vector2 vel)
-		//        : base(bound, vel) 
-		//    {
-		//        jumpState = false;
-		//        curJumpVel = 0;
-		//    }
-
-		//    // Flock algorithm
-		//    public override void doWander(Tile[,] gameScreen) 
-		//    {
-
-		//    }
-
-		//    public bool isJumping
-		//    {
-		//        get { return jumpState; }
-		//        set { jumpState = value; if (!jumpState) curJumpVel = 0; }
-		//    }
-		//    public float JumpVel
-		//    {
-		//        get { return curJumpVel; }
-		//        set { curJumpVel = value; }
-		//    }
-		//}
 	}
 
 }

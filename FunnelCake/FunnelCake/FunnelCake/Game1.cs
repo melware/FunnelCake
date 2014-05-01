@@ -64,6 +64,7 @@ namespace FunnelCake
 		Texture2D blockPlank;
 		Texture2D crawlerSprite;
 		Texture2D flyerSprite;
+		Texture2D jumperSprite;
         Model theb;
 
         Texture2D portaloff, portalup, portaldown, portalleft, 
@@ -78,11 +79,11 @@ namespace FunnelCake
 		float CRAWLER_SPEED = 3;
 		float FLYER_SPEED = 3;
 
-		const float PLAYER_SPEED = 4;
-		const float PLAYER_JUMP = 330 / 0.5f; // jump height / time to reach height
-        const float HOLD_UP = 10;
-		const float GRAVITY = 350 / 0.25f;
-		const float OBJ_SPEED = 0.5f;
+		public const float PLAYER_SPEED = 4;
+		public const float PLAYER_JUMP = 330 / 0.5f; // jump height / time to reach height
+        public const float HOLD_UP = 10;
+		public const float GRAVITY = 350 / 0.25f;
+		public const float OBJ_SPEED = 0.5f;
 
 		int score;
         bool firstLevel, boss;
@@ -102,7 +103,7 @@ namespace FunnelCake
 			gameScreen = new Tile[ROWS, COLS];
 			animals = new List<Animal>();
 			score = 0;
-			curLevel = 4;
+			curLevel = 1;
             oldKey = Keyboard.GetState();
             firstLevel = true;
             boss = false;
@@ -122,6 +123,7 @@ namespace FunnelCake
 			blockPlank = Content.Load<Texture2D>(@"Sprites/block_plank");
 			crawlerSprite = Content.Load<Texture2D>(@"Sprites/pet");
 			flyerSprite = Content.Load<Texture2D>(@"Sprites/pet");
+			jumperSprite = Content.Load<Texture2D>(@"Sprites/pet");
 			playerSprite	= Content.Load<Texture2D>(@"Sprites/player");
             winRight = Content.Load<Texture2D>(@"Sprites/winRight");
             winLeft = Content.Load<Texture2D>(@"Sprites/winLeft");
@@ -262,7 +264,7 @@ namespace FunnelCake
                             if (intersect.Width > BLOCK_DIM - PORTAL_COLLISION && intersect.Height > BLOCK_DIM - PORTAL_COLLISION)
                                 player.pt2 = portalType2.DOUBLE;
                         }
-                        else if (b.Type == GOType.WINR)
+                        else if (player.Type == GOType.PLAYER && b.Type == GOType.WINR)
                         {
 
                             if (countdown <= 0 || animalsLeft == 0)
@@ -275,7 +277,7 @@ namespace FunnelCake
                             }
                             
                         }
-                        else if (b.Type == GOType.WINL)
+						else if (player.Type == GOType.PLAYER && b.Type == GOType.WINL)
                         {
                             
                             if (boss)
@@ -583,6 +585,10 @@ namespace FunnelCake
 					else if (e.Type == GOType.FLYER)
 					{
 						e.doWander(gameScreen, animals, player);
+					} 
+					else if (e.Type == GOType.JUMPER)
+					{
+						e.doWander(gameScreen, null, player, gameTime);
 					}
 					handlePlatCollisions(e);
 				}
@@ -657,20 +663,22 @@ namespace FunnelCake
                     float rotation = 0;
                     if (player.pt1 == portalType1.NORMAL)
                         rotation = 0;
-                    else if (player.pt1 == portalType1.RIGHTSIDE)
-                        rotation = MathHelper.PiOver2;
+					else if (player.pt1 == portalType1.RIGHTSIDE)
+						rotation = MathHelper.Pi + MathHelper.PiOver2;
                     else if (player.pt1 == portalType1.UPSIDE)
                         rotation = MathHelper.Pi;
                     else if (player.pt1 == portalType1.LEFTSIDE)
-                        rotation = MathHelper.Pi + MathHelper.PiOver2;
+                        rotation = MathHelper.PiOver2;
 					
-					// TEST CODE
-					rotation = (float)Math.Atan2(p.velocity.X, -p.velocity.Y);
+					//// TEST CODE
+					//rotation = (float)Math.Atan2(p.velocity.X, -p.velocity.Y);
 						
                     if (p.Type == GOType.CRAWLER) spriteBatch.Draw(crawlerSprite, new Vector2(p.Location.X + HALF_BLOCK_DIM, p.Location.Y + HALF_BLOCK_DIM),
-                                                                    null, Color.White, rotation, new Vector2(HALF_BLOCK_DIM, HALF_BLOCK_DIM), 1, SpriteEffects.None, 0);
-                    else if (p.Type == GOType.FLYER) spriteBatch.Draw(crawlerSprite, new Vector2(p.Location.X + HALF_BLOCK_DIM, p.Location.Y + HALF_BLOCK_DIM),
-                                                                    null, Color.White, rotation, new Vector2(HALF_BLOCK_DIM, HALF_BLOCK_DIM), 1, SpriteEffects.None, 0);
+																	null, Color.White, rotation, new Vector2(HALF_BLOCK_DIM, HALF_BLOCK_DIM), 1, SpriteEffects.None, 0);
+					else if (p.Type == GOType.FLYER) spriteBatch.Draw(flyerSprite, new Vector2(p.Location.X + HALF_BLOCK_DIM, p.Location.Y + HALF_BLOCK_DIM),
+																	null, Color.White, rotation, new Vector2(HALF_BLOCK_DIM, HALF_BLOCK_DIM), 1, SpriteEffects.None, 0);
+					else if (p.Type == GOType.JUMPER) spriteBatch.Draw(jumperSprite, new Vector2(p.Location.X + HALF_BLOCK_DIM, p.Location.Y + HALF_BLOCK_DIM),
+																	null, Color.White, rotation, new Vector2(HALF_BLOCK_DIM, HALF_BLOCK_DIM), 1, SpriteEffects.None, 0);
 				}
 				foreach (Tile b in gameScreen)
 				{
@@ -729,9 +737,11 @@ namespace FunnelCake
                         else if (player.pt1 == portalType1.LEFTSIDE)
                             rotation = MathHelper.Pi + MathHelper.PiOver2;
                         if (p.Type == GOType.CRAWLER) spriteBatch.Draw(crawlerSprite, new Vector2(p.Location.X + HALF_BLOCK_DIM, p.Location.Y + HALF_BLOCK_DIM),
-                                                                        null, Color.White, rotation, new Vector2(HALF_BLOCK_DIM, HALF_BLOCK_DIM), 1, SpriteEffects.None, 0);
-                        else if (p.Type == GOType.FLYER) spriteBatch.Draw(crawlerSprite, new Vector2(p.Location.X + HALF_BLOCK_DIM, p.Location.Y + HALF_BLOCK_DIM),
-                                                                        null, Color.White, rotation, new Vector2(HALF_BLOCK_DIM, HALF_BLOCK_DIM), 1, SpriteEffects.None, 0);
+																		null, Color.White, rotation, new Vector2(HALF_BLOCK_DIM, HALF_BLOCK_DIM), 1, SpriteEffects.None, 0);
+						else if (p.Type == GOType.FLYER) spriteBatch.Draw(flyerSprite, new Vector2(p.Location.X + HALF_BLOCK_DIM, p.Location.Y + HALF_BLOCK_DIM),
+																		null, Color.White, 0, new Vector2(HALF_BLOCK_DIM, HALF_BLOCK_DIM), 1, SpriteEffects.None, 0);
+						else if (p.Type == GOType.JUMPER) spriteBatch.Draw(jumperSprite, new Vector2(p.Location.X + HALF_BLOCK_DIM, p.Location.Y + HALF_BLOCK_DIM),
+																		null, Color.White, rotation, new Vector2(HALF_BLOCK_DIM, HALF_BLOCK_DIM), 1, SpriteEffects.None, 0);
                 }
                 }
                 float rotationp = 0;
@@ -790,9 +800,9 @@ namespace FunnelCake
          * 6 = double gravity portal
          * 7 = normal portal
          * 0 = off portal
-         * c = critter 1
-         * v = critter 2
-         * b = critter 3 ect.
+         * c = crawler
+         * f = flyer
+         * j = jumper
          * p = player
          * x = platform
          * = = plank (thin platform)
@@ -839,6 +849,9 @@ namespace FunnelCake
 							break;
 						case GOType.FLYER:
 							animals2.Add(new Flyer(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM), FLYER_SPEED));
+							break;
+						case GOType.JUMPER:
+							animals2.Add(new Jumper(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM), CRAWLER_SPEED));
 							break;
                         case GOType.UP:
                             gameScreen2[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));

@@ -12,7 +12,7 @@ namespace FunnelCake
         EMPTY = '.',
         BSOLID = 'x', BPLANK = '=',
         PLAYER = 'p',
-        CRAWLER = 'c', FLYER = 'f',
+        CRAWLER = 'c', FLYER = 'f', JUMPER = 'j',
         UP = '1', DOWN = '2', LEFT = '3', RIGHT = '4',
         HALF = '5', DOUBLE = '6', NORMAL = '7', OFF = '0',
         WINR = '@', WINL = '!'
