@@ -117,6 +117,7 @@ namespace FunnelCake
 				isJumping = true;
 				JumpVel = 0;
 			}
+            this.X = MathHelper.Clamp(this.X, 0, Game1.WIDTH - Game1.BLOCK_DIM);
 			this.UpdateOldRec();
 		}
 
@@ -148,12 +149,17 @@ namespace FunnelCake
 			if (Vector2.Distance(player.Origin, this.Origin) < VIEW_RADIUS)
 			{
 				flee = true;
-				if (!isJumping)
+                bool shouldJump = true;
+
+
+				if (!isJumping && shouldJump)
 				{
 					isJumping = true;
 					JumpVel = Game1.PLAYER_JUMP*2/3;
 				}
 				tmpVector.X = this.Origin.X - player.Origin.X;
+                if (tmpVector.X == 0)
+                    tmpVector.X = .01f;
 			}
 
 			if (!tmpVector.Equals(Vector2.Zero)) tmpVector.Normalize();
@@ -200,6 +206,8 @@ namespace FunnelCake
 					}
 				}
 			}
+            this.X += tmpVector.X;
+            /*
 			switch (this.pt1)
 			{
 				case portalType1.NORMAL:
@@ -216,7 +224,7 @@ namespace FunnelCake
 					break;
 				default:
 					break;
-			}
+			}*/
 			if (intersectedWidth != 0 && intersectedWidth < this.Width)
 			{
 				tmpVector.X *= -1;
@@ -255,11 +263,11 @@ namespace FunnelCake
 						tempRec.Height += (int)val + 1;
 						this.Y += tmpVector.Y;
 						break;
-					case portalType1.UPSIDE:
+					case portalType1.LEFTSIDE:
 						tempRec.Height -= ((int)val + 1);
 						this.X -= tmpVector.Y;
 						break;
-					case portalType1.LEFTSIDE:
+					case portalType1.UPSIDE:
 						tempRec.Width += ((int)val + 1);
 						this.Y -= tmpVector.Y;
 						break;
@@ -415,6 +423,7 @@ namespace FunnelCake
 			//if (boundBox.X < 0) boundBox.X = Game1.WIDTH - boundBox.Width;
 			//if (boundBox.Y > Game1.WIDTH - boundBox.Height) boundBox.Y = 0;
 			//if (boundBox.Y < 0) boundBox.Y =  Game1.HEIGHT - boundBox.Height;
+            this.X = MathHelper.Clamp(this.X, 0, Game1.WIDTH - Game1.BLOCK_DIM);
 			this.UpdateOldRec();
 			
 		}

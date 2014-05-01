@@ -25,7 +25,7 @@ namespace FunnelCake
 		GraphicsDeviceManager graphics;
 		SpriteBatch spriteBatch;
         KeyboardState oldKey;
-		const int LEVEL_COUNTDOWN = 30000; // Milliseconds
+		const int LEVEL_COUNTDOWN = 500; // Milliseconds
 		int countdown;
 
 		int curLevel;
@@ -947,10 +947,14 @@ namespace FunnelCake
                 foreach (Animal b in animals2)
                 {
                     if (b != null)
-                        b.X += w + (BLOCK_DIM * COLS2);
+                        if (!boss)
+                            b.X += w + (BLOCK_DIM * COLS2);
+                        else
+                            b.X += w - (BLOCK_DIM * COLS2);
                 }
                 gameState = GameState.TRANSITION;
                 curFrames = TRANSITION_FRAMES;
+                countdown = 100000;
             }
 		}
         private void transitionLevel()
@@ -994,6 +998,7 @@ namespace FunnelCake
                 gameScreen = gameScreen2;
                 animals = animals2;
             }
+
         }
 	}
 }
