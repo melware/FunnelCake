@@ -588,7 +588,7 @@ namespace FunnelCake
 					} 
 					else if (e.Type == GOType.JUMPER)
 					{
-						e.doWander(gameScreen, null, player, gameTime);
+						e.doWander(gameScreen, animals, player, gameTime);
 					}
 					handlePlatCollisions(e);
 				}
@@ -891,8 +891,8 @@ namespace FunnelCake
                 gameScreen = gameScreen2;
                 animals = animals2;
                 firstLevel = false;
-                
-		}
+	            animalsLeft = animals.Count;
+            }
             else if (!(boss && level == 1))
             {
                 
