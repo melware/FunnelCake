@@ -49,13 +49,13 @@ namespace FunnelCake
 		Tile[,] gameScreen;   // Array of tiles to display
 
 		Texture2D blockSolid;
-		Texture2D blockPlank	;
+		Texture2D blockPlank;
 		Texture2D crawlerSprite;
 		Texture2D flyerSprite;
 
         Texture2D portaloff, portalup, portaldown, portalleft, 
             portalright, portalhalf, portaldouble, portalnormal;
-		Texture2D playerSprite	;
+		Texture2D playerSprite;
 
 		// Fonts
 		SpriteFont titleFont;
@@ -535,7 +535,7 @@ namespace FunnelCake
 					if (e.Type == GOType.CRAWLER) e.doWander(gameScreen);
 					else if (e.Type == GOType.FLYER)
 					{
-						e.doWander(gameScreen, rand);
+						e.doWander(gameScreen, animals);
 					}
 					handlePlatCollisions(e);
 				}
@@ -548,7 +548,6 @@ namespace FunnelCake
 			}
             
 
-            
             oldKey = curKey;
 			base.Update(gameTime);
 		}
