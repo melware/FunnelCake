@@ -683,6 +683,22 @@ namespace FunnelCake
                         else if (b.Type == GOType.WINR) spriteBatch.Draw(winRight, b.Location, Color.White);
                         else if (b.Type == GOType.WINL) spriteBatch.Draw(winLeft, b.Location, Color.White);
                     }
+                    foreach (Animal p in animals2)
+                    {
+                        float rotation = 0;
+                        if (player.pt1 == portalType1.NORMAL)
+                            rotation = 0;
+                        else if (player.pt1 == portalType1.RIGHTSIDE)
+                            rotation = MathHelper.PiOver2;
+                        else if (player.pt1 == portalType1.UPSIDE)
+                            rotation = MathHelper.Pi;
+                        else if (player.pt1 == portalType1.LEFTSIDE)
+                            rotation = MathHelper.Pi + MathHelper.PiOver2;
+                        if (p.Type == GOType.CRAWLER) spriteBatch.Draw(crawlerSprite, new Vector2(p.Location.X + HALF_BLOCK_DIM, p.Location.Y + HALF_BLOCK_DIM),
+                                                                        null, Color.White, rotation, new Vector2(HALF_BLOCK_DIM, HALF_BLOCK_DIM), 1, SpriteEffects.None, 0);
+                        else if (p.Type == GOType.FLYER) spriteBatch.Draw(crawlerSprite, new Vector2(p.Location.X + HALF_BLOCK_DIM, p.Location.Y + HALF_BLOCK_DIM),
+                                                                        null, Color.White, rotation, new Vector2(HALF_BLOCK_DIM, HALF_BLOCK_DIM), 1, SpriteEffects.None, 0);
+                    }
                 }
                 float rotationp = 0;
                 if (player.pt1 == portalType1.NORMAL)
