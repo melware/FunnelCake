@@ -44,10 +44,13 @@ namespace FunnelCake
         public const int TRANSITION_FRAMES = (WIDTH + (BLOCK_DIM * COLS2))/ TRANSITION_PIXELS;
         int curFrames;
         int animalsLeft;
+        Vector3 cameraPosition = new Vector3(0.0f, 50.0f, 10000f);
 
         enum GameState { START, PLAY, LOSE, WIN, PAUSE, TRANSITION };
 		GameState gameState;
-
+        Matrix view = Matrix.CreateLookAt(new Vector3(0, 0, 5), Vector3.Zero, Vector3.Up);
+        Matrix world = Matrix.Identity;
+        Matrix rotations = Matrix.Identity;
 		// Sprites
 		List<Animal> animals;
         List<Animal> animals2; //Use for transitioning levels
@@ -60,7 +63,7 @@ namespace FunnelCake
 		Texture2D blockPlank;
 		Texture2D crawlerSprite;
 		Texture2D flyerSprite;
-
+        Model theb;
         Texture2D portaloff, portalup, portaldown, portalleft, 
             portalright, portalhalf, portaldouble, portalnormal;
 		Texture2D playerSprite;
@@ -97,12 +100,14 @@ namespace FunnelCake
 			gameScreen = new Tile[ROWS, COLS];
 			animals = new List<Animal>();
 			score = 0;
-			curLevel = 1;
+			curLevel = 4;
             oldKey = Keyboard.GetState();
             firstLevel = true;
             boss = false;
             curFrames = 0;
-
+            RasterizerState rs = new RasterizerState();
+            rs.CullMode = CullMode.CullCounterClockwiseFace;
+            GraphicsDevice.RasterizerState = rs;
 			base.Initialize();
 		}
 
@@ -121,7 +126,7 @@ namespace FunnelCake
 
 			titleFont = Content.Load<SpriteFont>(@"Fonts\Titles");
 			subTitleFont = Content.Load<SpriteFont>(@"Fonts\Sub_titles");
-
+            theb = Content.Load<Model>(@"Models/p1_wedge");
             portaloff      = Content.Load<Texture2D>(@"Sprites/portaloff");
             portalleft     = Content.Load<Texture2D>(@"Sprites/portalleft");
             portalright    = Content.Load<Texture2D>(@"Sprites/portalright");
@@ -742,6 +747,22 @@ namespace FunnelCake
                     spriteBatch.DrawString(subTitleFont, "" + score, Vector2.Zero, Color.White);
                     // Time left
                     spriteBatch.DrawString(subTitleFont, "" + countdown / 1000, new Vector2(950, 0), Color.White);
+                }
+                else
+                {
+                    foreach (ModelMesh mesh in theb.Meshes)
+                    {
+                        
+                        foreach (BasicEffect effect in mesh.Effects)
+                        {
+                            effect.EnableDefaultLighting();
+                            effect.World = Matrix.CreateRotationY(MathHelper.PiOver2);
+                            effect.View = Matrix.CreateLookAt(cameraPosition, Vector3.Zero, Vector3.Up);
+                            effect.Projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(45.0f),
+                                .75f, 1.0f, 10000.0f);
+                        }
+                        mesh.Draw();
+                    }
                 }
 			}
 
