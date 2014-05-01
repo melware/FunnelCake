@@ -13,7 +13,7 @@ using Microsoft.Xna.Framework.Media;
 /*
  * Samir Mohamed Shannon Li
  * CS3113 Game Programming
- * Final project Halfway Deliverable
+ * Final project
  * 
  */
 
@@ -25,28 +25,35 @@ namespace FunnelCake
 		GraphicsDeviceManager graphics;
 		SpriteBatch spriteBatch;
         KeyboardState oldKey;
-		const int LEVEL_COUNTDOWN = 20000; // Milliseconds
+		const int LEVEL_COUNTDOWN = 3000; // Milliseconds
 		int countdown;
 
 		int curLevel;
 		const int MAX_LEVELS = 2;
 
 		// Screen size
-		public static int HEIGHT = 750;
-		public static int WIDTH = 1000;
-		public static int ROWS = 15;
-		public static int COLS = 20;
-		public static int BLOCK_DIM = 50;   // Block dimension in pixels (width == height)
+		public const int HEIGHT = 750;
+		public const int WIDTH = 1000;
+		public const int ROWS = 15;
+		public const int COLS = 20;
+        public const int COLS2 = 5;
+		public const int BLOCK_DIM = 50;   // Block dimension in pixels (width == height)
         public const int HALF_BLOCK_DIM = 25;
-        const int PORTAL_COLLISION = 6;
+        public const int PORTAL_COLLISION = 6;
+        public const int TRANSITION_PIXELS = 5;
+        public const int TRANSITION_FRAMES = (WIDTH + (BLOCK_DIM * COLS2))/ TRANSITION_PIXELS;
+        int curFrames;
 
-		enum GameState { START, PLAY, LOSE, WIN };
+        enum GameState { START, PLAY, LOSE, WIN, PAUSE, TRANSITION };
 		GameState gameState;
 
 		// Sprites
 		List<Animal> animals;
+        List<Animal> animals2; //Use for transitioning levels
 		Player player;
 		Tile[,] gameScreen;   // Array of tiles to display
+        Tile[,] gameScreen2; // used to hold next level
+        Tile[,] transScreen; // used to hold transition
 
 		Texture2D blockSolid;
 		Texture2D blockPlank;
@@ -56,6 +63,7 @@ namespace FunnelCake
         Texture2D portaloff, portalup, portaldown, portalleft, 
             portalright, portalhalf, portaldouble, portalnormal;
 		Texture2D playerSprite;
+        Texture2D winRight, winLeft;
 
 		// Fonts
 		SpriteFont titleFont;
@@ -65,12 +73,13 @@ namespace FunnelCake
 		float FLYER_SPEED = 3;
 
 		const float PLAYER_SPEED = 4;
-		const float PLAYER_JUMP = 300 / 0.5f; // jump height / time to reach height
+		const float PLAYER_JUMP = 330 / 0.5f; // jump height / time to reach height
         const float HOLD_UP = 10;
 		const float GRAVITY = 350 / 0.25f;
 		const float OBJ_SPEED = 0.5f;
 
 		int score;
+        bool firstLevel, boss;
 
 		public Game1()
 		{
@@ -89,6 +98,9 @@ namespace FunnelCake
 			score = 0;
 			curLevel = 1;
             oldKey = Keyboard.GetState();
+            firstLevel = true;
+            boss = false;
+            curFrames = 0;
 
 			base.Initialize();
 		}
@@ -103,7 +115,8 @@ namespace FunnelCake
 			crawlerSprite = Content.Load<Texture2D>(@"Sprites/pet");
 			flyerSprite = Content.Load<Texture2D>(@"Sprites/pet");
 			playerSprite	= Content.Load<Texture2D>(@"Sprites/player");
-			loadLevel(1);
+            winRight = Content.Load<Texture2D>(@"Sprites/winRight");
+            winLeft = Content.Load<Texture2D>(@"Sprites/winLeft");
 
 			titleFont = Content.Load<SpriteFont>(@"Fonts\Titles");
 			subTitleFont = Content.Load<SpriteFont>(@"Fonts\Sub_titles");
@@ -116,6 +129,10 @@ namespace FunnelCake
             portalhalf     = Content.Load<Texture2D>(@"Sprites/portalhalf");
             portaldouble = Content.Load<Texture2D>(@"Sprites/portaldouble");
             portalnormal = Content.Load<Texture2D>(@"Sprites/portalneutral");
+
+
+
+            loadLevel(curLevel);
 
 		}
         private void handlePlayerMovement(KeyboardState curKey, GameTime gameTime)
@@ -141,11 +158,11 @@ namespace FunnelCake
                     player.JumpVel += HOLD_UP;
 
                 if (player.pt2 == portalType2.NORMAL)
-                    player.JumpVel -= GRAVITY * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    player.JumpVel -= (GRAVITY * (float)gameTime.ElapsedGameTime.TotalSeconds) + 4;
                 else if (player.pt2 == portalType2.HALF)
-                    player.JumpVel -= (GRAVITY / 2.5f) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    player.JumpVel -= (GRAVITY / 2.4f) * (float)gameTime.ElapsedGameTime.TotalSeconds;
                 else if (player.pt2 == portalType2.DOUBLE)
-                    player.JumpVel -= GRAVITY * 2 * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    player.JumpVel -= (GRAVITY * 1.5f * (float)gameTime.ElapsedGameTime.TotalSeconds) + 5;
                 y -= player.JumpVel * (float)gameTime.ElapsedGameTime.TotalSeconds;
             }
 
@@ -235,6 +252,19 @@ namespace FunnelCake
                         {
                             if (intersect.Width > BLOCK_DIM - PORTAL_COLLISION && intersect.Height > BLOCK_DIM - PORTAL_COLLISION)
                                 player.pt2 = portalType2.DOUBLE;
+                        }
+                        else if (b.Type == GOType.WINR)
+                        {
+
+                            if (countdown <= 0)
+                            {
+                                loadLevel(++curLevel);
+                            }
+                        }
+                        else if (b.Type == GOType.WINL)
+                        {
+                            if (boss)
+                                loadLevel(--curLevel);
                         }
                         else
                         {
@@ -518,15 +548,8 @@ namespace FunnelCake
 			if (gameState == GameState.START && curKey.IsKeyDown(Keys.Space)) { gameState = GameState.PLAY; countdown = LEVEL_COUNTDOWN; }
 			else if (gameState == GameState.PLAY)
 			{
-				// Check for when to change to next level
-				if (animals.Count == 0 || countdown <= 0)
-				{
-					curLevel ++;
-					countdown = LEVEL_COUNTDOWN;
-					if (curLevel <= MAX_LEVELS) loadLevel(curLevel);
-					else gameState = GameState.WIN;
-					return;
-				}
+                if(curKey.IsKeyDown(Keys.P) && (!oldKey.IsKeyDown(Keys.P))){gameState = GameState.PAUSE;}
+				
 				
 				// Move automated objects
 				Random rand = new Random();
@@ -543,9 +566,28 @@ namespace FunnelCake
                 handlePlayerMovement(curKey, gameTime);
 				handlePlatCollisions(player);
                 catchAnimal();
+                if (countdown < 0)
+                {
+                    gameState = GameState.LOSE;
+                }
                 player.UpdateOldRec();
 				countdown -= gameTime.ElapsedGameTime.Milliseconds;
 			}
+            else if (gameState == GameState.PAUSE)
+            {
+                if (curKey.IsKeyDown(Keys.P) && (!oldKey.IsKeyDown(Keys.P))) { gameState = GameState.PLAY; }
+            }
+            else if (gameState == GameState.TRANSITION)
+            {
+                if (curFrames <= 0)
+                {
+                    gameState = GameState.PLAY;
+                }
+                else
+                {
+                    transitionLevel();
+                }
+            }
             
 
             oldKey = curKey;
@@ -558,7 +600,7 @@ namespace FunnelCake
 
 			spriteBatch.Begin();
 
-			if (gameState != GameState.PLAY)
+			if (gameState != GameState.PLAY && gameState != GameState.TRANSITION)
 			{
 				switch (gameState)
 				{
@@ -572,6 +614,9 @@ namespace FunnelCake
 					case GameState.WIN:
 						spriteBatch.DrawString(titleFont, "FIN.\n You scored " + score+"!", Vector2.Zero, Color.White);
 						break;
+                    case GameState.PAUSE:
+                        spriteBatch.DrawString(titleFont, "PAUSED", Vector2.Zero, Color.White);
+                        break;  
 					default:
 						break;
 				}
@@ -599,18 +644,47 @@ namespace FunnelCake
 				{
 					if (b != null)                                                                   
 					{                                                                                
-						if (b.Type == GOType.BSOLID)        spriteBatch.Draw(blockSolid, b.Location, Color.White)  ;
-						else if (b.Type == GOType.BPLANK)   spriteBatch.Draw(blockPlank, b.Location, Color.White)  ;
-                        else if (b.Type == GOType.UP)       spriteBatch.Draw(portalup,   b.Location, Color.White)  ;
-                        else if (b.Type == GOType.DOWN)     spriteBatch.Draw(portaldown, b.Location, Color.White)  ;
-                        else if (b.Type == GOType.LEFT)     spriteBatch.Draw(portalleft, b.Location, Color.White)  ;
-                        else if (b.Type == GOType.RIGHT)    spriteBatch.Draw(portalright,b.Location, Color.White)  ;
-                        else if (b.Type == GOType.OFF)      spriteBatch.Draw(portaloff,  b.Location, Color.White)  ;
-                        else if (b.Type == GOType.HALF)     spriteBatch.Draw(portalhalf, b.Location, Color.White)  ;
-                        else if (b.Type == GOType.DOUBLE) spriteBatch.Draw(portaldouble, b.Location, Color.White);
-                        else if (b.Type == GOType.NORMAL) spriteBatch.Draw(portalnormal, b.Location, Color.White);
+						if (b.Type == GOType.BSOLID)        spriteBatch.Draw(blockSolid, b.Location, Color.White);
+						else if (b.Type == GOType.BPLANK)   spriteBatch.Draw(blockPlank, b.Location, Color.White);
+                        else if (b.Type == GOType.UP)       spriteBatch.Draw(portalup,   b.Location, Color.White);
+                        else if (b.Type == GOType.DOWN)     spriteBatch.Draw(portaldown, b.Location, Color.White);
+                        else if (b.Type == GOType.LEFT)     spriteBatch.Draw(portalleft, b.Location, Color.White);
+                        else if (b.Type == GOType.RIGHT)    spriteBatch.Draw(portalright,b.Location, Color.White);
+                        else if (b.Type == GOType.OFF)      spriteBatch.Draw(portaloff,  b.Location, Color.White);
+                        else if (b.Type == GOType.HALF)     spriteBatch.Draw(portalhalf, b.Location, Color.White);
+                        else if (b.Type == GOType.DOUBLE)   spriteBatch.Draw(portaldouble, b.Location, Color.White);
+                        else if (b.Type == GOType.NORMAL)   spriteBatch.Draw(portalnormal, b.Location, Color.White);
+                        else if (b.Type == GOType.WINR)     spriteBatch.Draw(winRight, b.Location, Color.White);
+                        else if (b.Type == GOType.WINL)     spriteBatch.Draw(winLeft, b.Location, Color.White);
 					}
 				}
+                if (gameState == GameState.TRANSITION)
+                {
+                    foreach (Tile b in transScreen)
+                    {
+                        if (b != null)
+                        {
+                            if (b.Type == GOType.BSOLID) spriteBatch.Draw(blockSolid, b.Location, Color.White);
+                            else if (b.Type == GOType.BPLANK) spriteBatch.Draw(blockPlank, b.Location, Color.White);
+                        }
+                    }
+                    foreach (Tile b in gameScreen2)
+                    if (b != null)
+                    {
+                        if (b.Type == GOType.BSOLID) spriteBatch.Draw(blockSolid, b.Location, Color.White);
+                        else if (b.Type == GOType.BPLANK) spriteBatch.Draw(blockPlank, b.Location, Color.White);
+                        else if (b.Type == GOType.UP) spriteBatch.Draw(portalup, b.Location, Color.White);
+                        else if (b.Type == GOType.DOWN) spriteBatch.Draw(portaldown, b.Location, Color.White);
+                        else if (b.Type == GOType.LEFT) spriteBatch.Draw(portalleft, b.Location, Color.White);
+                        else if (b.Type == GOType.RIGHT) spriteBatch.Draw(portalright, b.Location, Color.White);
+                        else if (b.Type == GOType.OFF) spriteBatch.Draw(portaloff, b.Location, Color.White);
+                        else if (b.Type == GOType.HALF) spriteBatch.Draw(portalhalf, b.Location, Color.White);
+                        else if (b.Type == GOType.DOUBLE) spriteBatch.Draw(portaldouble, b.Location, Color.White);
+                        else if (b.Type == GOType.NORMAL) spriteBatch.Draw(portalnormal, b.Location, Color.White);
+                        else if (b.Type == GOType.WINR) spriteBatch.Draw(winRight, b.Location, Color.White);
+                        else if (b.Type == GOType.WINL) spriteBatch.Draw(winLeft, b.Location, Color.White);
+                    }
+                }
                 float rotationp = 0;
                 if (player.pt1 == portalType1.NORMAL)
                     rotationp = 0;
@@ -653,14 +727,19 @@ namespace FunnelCake
          * b = critter 3 ect.
          * p = player
          * x = platform
-         * = = plank (think platform)
+         * = = plank (thin platform)
+         * ! = win left
+         * @ = win right
          */
+            //Reset countdown
+            countdown = LEVEL_COUNTDOWN;
+            //Load the next level
 			System.IO.Stream stream = TitleContainer.OpenStream("Content/Levels/"+level+".txt");
 			System.IO.StreamReader sreader = new System.IO.StreamReader(stream);
 			string line;
 			int r = 0;
-			gameScreen = new Tile[ROWS, COLS];
-			animals = new List<Animal>();
+			gameScreen2 = new Tile[ROWS, COLS];
+			animals2 = new List<Animal>();
 			while ((line = sreader.ReadLine()) != null)
 			{
 				for (int c = 0; c < line.Length; c++)
@@ -671,44 +750,50 @@ namespace FunnelCake
 
                         case GOType.EMPTY:
                             break;
+                        case GOType.WINL:
+                            gameScreen2[r, c] = new Tile(GOType.WINL, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                            break;
+                        case GOType.WINR:
+                            gameScreen2[r, c] = new Tile(GOType.WINR, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                            break;
 						case GOType.BSOLID:
-							gameScreen[r, c] = new Tile(GOType.BSOLID, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+							gameScreen2[r, c] = new Tile(GOType.BSOLID, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
 							break;
 						case GOType.BPLANK:
-							gameScreen[r, c] = new Tile(GOType.BPLANK, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+							gameScreen2[r, c] = new Tile(GOType.BPLANK, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
 							break;
 						case GOType.PLAYER:
 							player = new Player(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM), PLAYER_SPEED);
 							break;
 						case GOType.CRAWLER:
-							animals.Add(new Crawler(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM), CRAWLER_SPEED));
+							animals2.Add(new Crawler(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM), CRAWLER_SPEED));
 							break;
 						case GOType.FLYER:
-							animals.Add(new Flyer(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM), FLYER_SPEED));
+							animals2.Add(new Flyer(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM), FLYER_SPEED));
 							break;
                         case GOType.UP:
-                            gameScreen[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                            gameScreen2[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
                             break;
                         case GOType.DOWN:
-                            gameScreen[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                            gameScreen2[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
                             break;
                         case GOType.LEFT:
-                            gameScreen[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                            gameScreen2[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
                             break;
                         case GOType.RIGHT:
-                            gameScreen[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                            gameScreen2[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
                             break;
                         case GOType.HALF:
-                            gameScreen[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                            gameScreen2[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
                             break;
                         case GOType.DOUBLE:
-                            gameScreen[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                            gameScreen2[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
                             break;
                         case GOType.OFF:
-                            gameScreen[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                            gameScreen2[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
                             break;
                         case GOType.NORMAL:
-                            gameScreen[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                            gameScreen2[r, c] = new Tile(temp, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
                             break;
 						default:
 							break;
@@ -717,6 +802,97 @@ namespace FunnelCake
 				r++;
 			}
 			sreader.Close();
+
+            //Decide whether to pan the screen or just display it (if it's the firt level displayed)
+            if (firstLevel)
+            {
+                gameScreen = gameScreen2;
+                animals = animals2;
+                firstLevel = false;
+                
 		}
+            else
+            {
+                
+                //Load Transition Level
+                stream = TitleContainer.OpenStream("Content/Levels/"+(level-1)+"x.txt");
+			    sreader = new System.IO.StreamReader(stream);
+			    r = 0;
+			    transScreen = new Tile[ROWS, COLS2];
+                while ((line = sreader.ReadLine()) != null)
+                {
+                    for (int c = 0; c < line.Length; c++)
+                    {
+                        GOType temp = (GOType)line.ElementAt<char>(c);
+                        switch (temp)
+                        {
+
+                            case GOType.EMPTY:
+                                break;
+                            case GOType.BSOLID:
+                                transScreen[r, c] = new Tile(GOType.BSOLID, new Rectangle(c * BLOCK_DIM + WIDTH, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                                break;
+                            case GOType.BPLANK:
+                                transScreen[r, c] = new Tile(GOType.BPLANK, new Rectangle(c * BLOCK_DIM + WIDTH, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    r++;
+                }
+
+                //Transition
+                foreach (Tile b in gameScreen2)
+                {
+                    if(b != null)
+                    b.X += WIDTH + (BLOCK_DIM * COLS2);
+                }
+                foreach (Animal b in animals2)
+                {
+                    if (b != null)
+                        b.X += WIDTH + (BLOCK_DIM * COLS2);
+                }
+                gameState = GameState.TRANSITION;
+                curFrames = TRANSITION_FRAMES;
+            }
+		}
+        private void transitionLevel()
+        {
+            foreach (Tile b in gameScreen)
+            {
+                if(b!=null)
+                b.X -= TRANSITION_PIXELS;
+            }
+            foreach (Animal b in animals)
+            {
+                if (b != null)
+                    b.X -= TRANSITION_PIXELS;
+            }
+            foreach (Animal b in animals2)
+            {
+                if (b != null)
+                    b.X -= TRANSITION_PIXELS;
+            }
+            foreach (Tile b in transScreen)
+            {
+                if (b != null)
+                    b.X -= TRANSITION_PIXELS;
+            }
+            foreach (Tile b in gameScreen2)
+            {
+                if (b != null)
+                    b.X -= TRANSITION_PIXELS;
+            }
+            if(curFrames <190) 
+            player.X -= TRANSITION_PIXELS;
+            curFrames--;
+            if (curFrames <= 0)
+            {
+
+                gameScreen = gameScreen2;
+                animals = animals2;
+            }
+        }
 	}
 }
