@@ -25,7 +25,7 @@ namespace FunnelCake
 		GraphicsDeviceManager graphics;
 		SpriteBatch spriteBatch;
         KeyboardState oldKey;
-		const int LEVEL_COUNTDOWN = 3000; // Milliseconds
+		const int LEVEL_COUNTDOWN = 200000; // Milliseconds
 		int countdown;
 
 		int curLevel;
@@ -558,7 +558,7 @@ namespace FunnelCake
 					if (e.Type == GOType.CRAWLER) e.doWander(gameScreen);
 					else if (e.Type == GOType.FLYER)
 					{
-						e.doWander(gameScreen, animals);
+						e.doWander(gameScreen, animals, player);
 					}
 					handlePlatCollisions(e);
 				}
@@ -635,6 +635,10 @@ namespace FunnelCake
                         rotation = MathHelper.Pi;
                     else if (player.pt1 == portalType1.LEFTSIDE)
                         rotation = MathHelper.Pi + MathHelper.PiOver2;
+					
+					// TEST CODE
+					rotation = (float)Math.Atan2(p.velocity.X, -p.velocity.Y);
+						
                     if (p.Type == GOType.CRAWLER) spriteBatch.Draw(crawlerSprite, new Vector2(p.Location.X + HALF_BLOCK_DIM, p.Location.Y + HALF_BLOCK_DIM),
                                                                     null, Color.White, rotation, new Vector2(HALF_BLOCK_DIM, HALF_BLOCK_DIM), 1, SpriteEffects.None, 0);
                     else if (p.Type == GOType.FLYER) spriteBatch.Draw(crawlerSprite, new Vector2(p.Location.X + HALF_BLOCK_DIM, p.Location.Y + HALF_BLOCK_DIM),
