@@ -59,8 +59,15 @@ namespace FunnelCake
 			set { boundBox.X = (int)value.X; boundBox.Y = (int)value.Y; }
 		}
 
+		public Vector2 Origin
+		{
+			get { return new Vector2(boundBox.X + Width / 2, boundBox.Y + Height / 2); }
+		}
+
 		public float X { get { return boundBox.X; } set { boundBox.X = (int)value; } }
 		public float Y { get { return boundBox.Y; } set { boundBox.Y = (int)value; } }
+		public float OriginX { get { return boundBox.X+Width/2; } }
+		public float OriginY { get { return boundBox.Y+Height/2; } }
 		public int Width { get { return boundBox.Width; } set { boundBox.Width = value; } }
 		public int Height { get { return boundBox.Height; } set { boundBox.Height = value; } }
 

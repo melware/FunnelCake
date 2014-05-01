@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using Microsoft.Xna.Framework;
@@ -12,31 +13,84 @@ using Microsoft.Xna.Framework.Media;
 
 namespace FunnelCake
 {
-	abstract class Animal : GameObject
+	abstract class Animal : Player
 	{
+		public Vector2 velocity;
+		protected static float VIEW_RADIUS;
+		protected static float SEP_RADIUS;
+		protected static float COHESION_WT;
+		protected static float SEPARATION_WT;
+		protected static float ALIGNMENT_WT;
 
-		protected Vector2 velocity;
-		public Animal(Rectangle bound, Vector2 vel)
-			: base(bound)
+		public Animal(Rectangle bound, float vel)
+			: base(bound, vel)
 		{
-			velocity = vel;
+			pt1 = portalType1.NORMAL;
+			pt2 = portalType2.NORMAL;
 		}
-		public virtual void doWander(Tile[,] gameScreen) { }
-		public virtual void doWander(Tile[,] gameScreen, Random rand) { }
+
+		public virtual void doWander(Tile[,] gameScreen, List<Animal> flock = null) { }
+
+
+		///// <summary>
+		///// Returns whether the parameter animal is within the separation radius of this animal
+		///// </summary>
+		//public bool isTooClose(Animal animal)
+		//{
+		//    return (Vector2.DistanceSquared(this.Origin, animal.Origin) <= SEP_RADIUS*SEP_RADIUS);
+		//}
+
+
+		/// <summary>
+		/// Returns the neighbors within the viewing range of an Animal
+		/// </summary>
+		public static List<Animal> getNeighbors(Animal me, List<Animal> flock)
+		{
+			List<Animal> neighs = new List<Animal>();
+			foreach (Animal a in flock)
+			{
+				float distanceSq = Vector2.DistanceSquared(a.Origin, me.Origin);
+				if (distanceSq < VIEW_RADIUS * VIEW_RADIUS &&
+					!me.Equals(a))
+				{
+					neighs.Add(a);
+				}
+			}
+			return neighs;
+		}
+
+		/// <summary>
+		/// Returns the solid or plank blocks within the viewing range of an Animal
+		/// </summary>
+		public static List<Tile> getNearbyBlocks(Animal me, Tile[,] map)
+		{
+			List<Tile> blocks = new List<Tile>();
+			foreach(Tile b in map)
+			{
+				if (b != null && (b.Type == GOType.BPLANK || b.Type == GOType.BSOLID) &&
+					Vector2.DistanceSquared(b.Origin, me.Origin) <= VIEW_RADIUS*VIEW_RADIUS)
+				{
+					blocks.Add(b);
+				}
+			}
+			return blocks;
+		}
 	}
 
 	class Crawler : Animal
 	{
 		protected Rectangle walkingBox; // For detecting ground to wander on
-		public Crawler(Rectangle bound, Vector2 vel)
-			: base(bound, new Vector2(vel.X, 0))  // Make sure the Y-velocity remains zero
+
+		public Crawler(Rectangle bound, float vel)
+			: base(bound, vel)  // Make sure the Y-velocity remains zero
 		{
 			// Create a box right below the sprite to find ground
 			walkingBox = new Rectangle((int)(base.X + base.Width), (int)(base.Y + base.Height), (int)base.Width, 1);
+			velocity = new Vector2(vel,0);
 		}
 		public override GOType Type { get { return GOType.CRAWLER; } }
 
-		public override void doWander(Tile[,] gameScreen)
+		public override void doWander(Tile[,] gameScreen, List<Animal> flock = null)
 		{
 			base.X += velocity.X; walkingBox.X = (int)base.X;
 			int intersectedWidth = 0;
@@ -62,106 +116,152 @@ namespace FunnelCake
 		}
 	}
 
-	//// Animal that flocks as well
-	//class Jumper : Animal
-	//{
-	//    bool jumpState;
-	//    float curJumpVel;
-
-	//    public Jumper(Rectangle bound, Vector2 vel)
-	//        : base(bound, vel) 
-	//    {
-	//        jumpState = false;
-	//        curJumpVel = 0;
-	//    }
-
-	//    // Flock algorithm
-	//    public override void doWander(Tile[,] gameScreen) 
-	//    {
-			
-	//    }
-
-	//    public bool isJumping
-	//    {
-	//        get { return jumpState; }
-	//        set { jumpState = value; if (!jumpState) curJumpVel = 0; }
-	//    }
-	//    public float JumpVel
-	//    {
-	//        get { return curJumpVel; }
-	//        set { curJumpVel = value; }
-	//    }
-	//}
-
 	// Animal that flocks
 	class Flyer : Animal
 	{
-		public Vector2 wanderDir;
+		//public Vector2 wanderDir; // UNNECESSARY ?
 
-		public Flyer(Rectangle bound, Vector2 vel)
+		public Flyer(Rectangle bound, float vel)
 			: base(bound, vel) 
 		{
+			//wanderDir = new Vector2((float)rand.NextDouble()*2-1.5f, (float)rand.NextDouble()*2-1.5f);
+			//if(wanderDir != Vector2.Zero) wanderDir.Normalize();
+			
 			Random rand = new Random();
-			wanderDir = new Vector2((float)rand.NextDouble()*2-1.5f, (float)rand.NextDouble()*2-1.5f);
-			if(wanderDir != Vector2.Zero) wanderDir.Normalize();
+			velocity = Vector2.Zero;
+			VIEW_RADIUS = 2 * Game1.BLOCK_DIM;
+			SEP_RADIUS = 1.2f*Game1.BLOCK_DIM;
+			ALIGNMENT_WT = 0.4f;
+			COHESION_WT = 0.6f;
+			SEPARATION_WT = 0.6f;
 		}
 
 		public override GOType Type { get { return GOType.FLYER; } }
 
-		public override void doWander(Tile[,] gameScreen, Random rand)
+
+
+		public override void doWander(Tile[,] gameScreen, List<Animal> flock)
 		{
-			Vector2 tmpWanderDir;
-			float tmpX;
-			float tmpY;
+			//Vector2 tmpWanderDir;
+			//float tmpX;
+			//float tmpY;
 
-			tmpWanderDir = wanderDir;
-			// Randomly get a direction to head towards
-			tmpWanderDir.X += MathHelper.Lerp(-0.4f, 0.4f, (float)rand.NextDouble());
-			tmpWanderDir.Y += MathHelper.Lerp(-0.4f, 0.4f, (float)rand.NextDouble());
+			List<Animal> neighbors = getNeighbors(this, flock);
+			List<Tile> blocks = getNearbyBlocks(this, gameScreen);
 
-			// Tend to move away from bounds (towards center)
-			Vector2 screenCenter = new Vector2(Game1.WIDTH / 2, Game1.HEIGHT / 2);
-			// Find distance from center squared
-			float distanceFromCenterSQ = (float)Math.Pow(this.X - screenCenter.X, 2) + (float)Math.Pow(this.Y - screenCenter.Y,2);
-			float maxDistanceSQ = screenCenter.X * screenCenter.X ;
-			float normalizedDistanceSQ = distanceFromCenterSQ / maxDistanceSQ;
+			// Determine Cohesion velocity
+			Vector2 cohesionAvg = Vector2.Zero;
+			Vector2 separationAvg = Vector2.Zero;
+			Vector2 alignmentAvg = Vector2.Zero;
+
+			int cohesionCount = 0;
+			int separationCount = 0;
+
+			if (neighbors.Count > 0)
+			{
+				// Find the average component locations
+				foreach (Animal a in neighbors)
+				{
+					float distSq = Vector2.DistanceSquared(this.Origin, a.Origin);
+
+					// Handle separation/cohesion
+					if (distSq <= SEP_RADIUS* SEP_RADIUS) // neighbor is too close
+					{
+						// Add to the separation vector
+						float diff = distSq - SEP_RADIUS * SEP_RADIUS;
+						separationAvg = Vector2.Add(separationAvg, Vector2.Negate(a.velocity));
+						//// Weigh the separation component by the distance
+						Vector2.Multiply(separationAvg, 1.0f + diff / (SEP_RADIUS * SEP_RADIUS));
+						separationCount++;
+					}
+					else
+					{
+						// Add to the cohesion vector
+						cohesionAvg = Vector2.Add(cohesionAvg, a.Origin);
+
+						alignmentAvg = Vector2.Add(alignmentAvg, a.velocity);
+
+
+						cohesionCount++;
+					}
+				}
+
+				if (cohesionCount > 0)
+				{
+					cohesionAvg = Vector2.Divide(cohesionAvg, cohesionCount);
+					alignmentAvg = Vector2.Divide(alignmentAvg, cohesionCount);
+				}
+				if(separationCount > 0) { separationAvg = Vector2.Divide(separationAvg, separationCount);}
+				
+			}
+
+			// TODO Avoid blocks
+
+			// TODO Avoid human
+
+			Vector2 steerVec = Vector2.Zero;
+			if(!alignmentAvg.Equals(Vector2.Zero))
+			{
+				steerVec = Vector2.Normalize(alignmentAvg) - velocity;
+			}
+			Vector2.Multiply(steerVec, ALIGNMENT_WT);
+
+			velocity += Vector2.Multiply(cohesionAvg, COHESION_WT) +
+						Vector2.Multiply(separationAvg, SEPARATION_WT) +
+						steerVec;
 			
-			Vector2 centerDir = new Vector2(screenCenter.X - this.X, screenCenter.Y - this.Y);
+			//string k = velocity.X + ", " + velocity.Y;
+			
+			if(!velocity.Equals(Vector2.Zero))velocity.Normalize();
 
-			if(centerDir != Vector2.Zero) centerDir.Normalize();
-			if (tmpWanderDir != Vector2.Zero) tmpWanderDir.Normalize();
+			//Console.WriteLine("Before: " + k + "; After: " + velocity.X + ", " + velocity.Y);
 
-			tmpX = boundBox.X + tmpWanderDir.X * 0.5f * velocity.X + centerDir.X * 1.2f * normalizedDistanceSQ * velocity.X;
-			tmpY = boundBox.Y + tmpWanderDir.Y * 0.5f * velocity.Y + centerDir.Y * 1.2f * normalizedDistanceSQ * velocity.Y;
+			boundBox.X += (int)((velocity.X) * speed);
+			boundBox.Y += (int)((velocity.Y) * speed);
 
-			//bool collides = false;
-			//// Check if heading in that direction collides with a tile
-			//// Calculate possible colliding tiles
-			//int startX = (int)Math.Floor(tmpX / boundBox.Width);
-			//int endX = (int)Math.Floor((tmpX + boundBox.Width) / boundBox.Width);
-			//int startY = (int)Math.Floor(tmpY / boundBox.Height);
-			//int endY = (int)Math.Floor((tmpY + boundBox.Height) / boundBox.Height);
-			//// Check if each possible tile collides with this object
-			//for (int x = startX; x <= endX; x++)
-			//{
-			//    for (int y = startY; y <= endY; y++)
-			//    {
-			//        if (x > 0 && x < Game1.COLS
-			//            && y > 0 && y < Game1.ROWS)
-			//        {
-			//            if (gameScreen[y, x] != null && this.Intersects(gameScreen[y, x]))
-			//            {
-			//                collides = true;
-			//                break;
-			//            }
-			//        }
-			//    }
-			//}
-			wanderDir = tmpWanderDir;
-			boundBox.X = (int)MathHelper.Clamp(tmpX, 0, Game1.WIDTH-boundBox.Width);
-			boundBox.Y = (int)MathHelper.Clamp(tmpY, 0, Game1.HEIGHT-boundBox.Height-Game1.BLOCK_DIM);
+			//// Keep from flying off the screen
+			//boundBox.X = (int)MathHelper.Clamp(boundBox.X, 0, Game1.WIDTH-boundBox.Width);
+			//boundBox.Y = (int)MathHelper.Clamp(boundBox.Y, 0, Game1.HEIGHT-boundBox.Height-Game1.BLOCK_DIM);
 
+			// Wrap screen
+			if (boundBox.X > Game1.WIDTH - boundBox.Width) boundBox.X = 0;
+			if (boundBox.X < 0) boundBox.X = Game1.WIDTH - boundBox.Width;
+			if (boundBox.Y > Game1.WIDTH - boundBox.Height) boundBox.Y = 0;
+			if (boundBox.Y < 0) boundBox.Y =  Game1.HEIGHT - boundBox.Height;
+			
 		}
+
+
+		//// Animal that flocks as well
+		//class Jumper : Animal
+		//{
+		//    bool jumpState;
+		//    float curJumpVel;
+
+		//    public Jumper(Rectangle bound, Vector2 vel)
+		//        : base(bound, vel) 
+		//    {
+		//        jumpState = false;
+		//        curJumpVel = 0;
+		//    }
+
+		//    // Flock algorithm
+		//    public override void doWander(Tile[,] gameScreen) 
+		//    {
+
+		//    }
+
+		//    public bool isJumping
+		//    {
+		//        get { return jumpState; }
+		//        set { jumpState = value; if (!jumpState) curJumpVel = 0; }
+		//    }
+		//    public float JumpVel
+		//    {
+		//        get { return curJumpVel; }
+		//        set { curJumpVel = value; }
+		//    }
+		//}
 	}
 
 }

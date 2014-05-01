@@ -25,7 +25,7 @@ namespace FunnelCake
 		GraphicsDeviceManager graphics;
 		SpriteBatch spriteBatch;
         KeyboardState oldKey;
-		const int LEVEL_COUNTDOWN = 300; // Milliseconds
+		const int LEVEL_COUNTDOWN = 3000; // Milliseconds
 		int countdown;
 
 		int curLevel;
@@ -69,8 +69,8 @@ namespace FunnelCake
 		SpriteFont titleFont;
 		SpriteFont subTitleFont;
 
-		Vector2 CRAWLER_SPEED = new Vector2(2, 0);
-		Vector2 FLYER_SPEED = new Vector2(2, 2);
+		float CRAWLER_SPEED = 3;
+		float FLYER_SPEED = 3;
 
 		const float PLAYER_SPEED = 4;
 		const float PLAYER_JUMP = 330 / 0.5f; // jump height / time to reach height
@@ -91,6 +91,7 @@ namespace FunnelCake
 
 		protected override void Initialize()
 		{
+			IsMouseVisible = true;
 			gameState = GameState.START;
 			gameScreen = new Tile[ROWS, COLS];
 			animals = new List<Animal>();
@@ -548,7 +549,7 @@ namespace FunnelCake
 			else if (gameState == GameState.PLAY)
 			{
                 if(curKey.IsKeyDown(Keys.P) && (!oldKey.IsKeyDown(Keys.P))){gameState = GameState.PAUSE;}
-                
+				
 				
 				// Move automated objects
 				Random rand = new Random();
@@ -557,8 +558,9 @@ namespace FunnelCake
 					if (e.Type == GOType.CRAWLER) e.doWander(gameScreen);
 					else if (e.Type == GOType.FLYER)
 					{
-						e.doWander(gameScreen, rand);
+						e.doWander(gameScreen, animals);
 					}
+					handlePlatCollisions(e);
 				}
 
                 handlePlayerMovement(curKey, gameTime);
@@ -588,7 +590,6 @@ namespace FunnelCake
             }
             
 
-            
             oldKey = curKey;
 			base.Update(gameTime);
 		}
@@ -778,7 +779,7 @@ namespace FunnelCake
 							gameScreen2[r, c] = new Tile(GOType.BPLANK, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
 							break;
 						case GOType.PLAYER:
-							player = new Player(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+							player = new Player(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM), PLAYER_SPEED);
 							break;
 						case GOType.CRAWLER:
 							animals2.Add(new Crawler(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM), CRAWLER_SPEED));
@@ -825,7 +826,7 @@ namespace FunnelCake
                 animals = animals2;
                 firstLevel = false;
                 
-            }
+		}
             else
             {
                 
