@@ -102,7 +102,7 @@ namespace FunnelCake
 			gameScreen = new Tile[ROWS, COLS];
 			animals = new List<Animal>();
 			score = 0;
-			curLevel = 4;
+			curLevel = 1;
             oldKey = Keyboard.GetState();
             firstLevel = true;
             boss = false;
