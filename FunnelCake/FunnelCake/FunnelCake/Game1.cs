@@ -25,7 +25,7 @@ namespace FunnelCake
 		GraphicsDeviceManager graphics;
 		SpriteBatch spriteBatch;
         KeyboardState oldKey;
-		const int LEVEL_COUNTDOWN = 500; // Milliseconds
+		const int LEVEL_COUNTDOWN = 25000; // Milliseconds
 		int countdown;
 
 		int curLevel;
@@ -44,13 +44,15 @@ namespace FunnelCake
         public const int TRANSITION_FRAMES = (WIDTH + (BLOCK_DIM * COLS2))/ TRANSITION_PIXELS;
         int curFrames;
         int animalsLeft;
-        Vector3 cameraPosition = new Vector3(0.0f, 50.0f, 10000f);
+        Vector3 cameraPosition = new Vector3(1000f, 50.0f, 10000f);
 
         enum GameState { START, PLAY, LOSE, WIN, PAUSE, TRANSITION };
 		GameState gameState;
-        Matrix view = Matrix.CreateLookAt(new Vector3(0, 0, 5), Vector3.Zero, Vector3.Up);
+        //Matrix view = Matrix.CreateLookAt(new Vector3(0, 0, 5), Vector3.Zero, Vector3.Up);
         Matrix world = Matrix.Identity;
         Matrix rotations = Matrix.Identity;
+        float ROTATION_SPEED = .1f;
+        Matrix translation = Matrix.Identity;
 
 		// Sprites
 		List<Animal> animals;
@@ -85,7 +87,7 @@ namespace FunnelCake
 		public const float GRAVITY = 350 / 0.25f;
 		public const float OBJ_SPEED = 0.5f;
 
-		int score;
+        int score;
         bool firstLevel, boss;
 
 		public Game1()
@@ -111,6 +113,7 @@ namespace FunnelCake
             RasterizerState rs = new RasterizerState();
             rs.CullMode = CullMode.CullCounterClockwiseFace;
             GraphicsDevice.RasterizerState = rs;
+            world = Matrix.CreateRotationY(MathHelper.PiOver2);
 			base.Initialize();
 		}
 
@@ -282,13 +285,10 @@ namespace FunnelCake
                             
                             if (boss)
                             {
-                                if (curLevel - 1 == 0)
-                                    gameState = GameState.WIN;
-                                else
-                                {
-                                    loadLevel(--curLevel);
+                                curLevel--;
+                                
+                                    loadLevel(curLevel);
                                     player.Y = b.Y;
-                                }
                             }
                         }
                         else
@@ -574,9 +574,22 @@ namespace FunnelCake
 			else if (gameState == GameState.PLAY)
 			{
                 if(curKey.IsKeyDown(Keys.P) && (!oldKey.IsKeyDown(Keys.P))){gameState = GameState.PAUSE;}
-				
+
+                if (boss)
+                {
+                    translation = translation * Matrix.CreateTranslation(-2, 0, 0);
+                    if (curLevel == 4)
+                        rotations *= Matrix.CreateRotationX(ROTATION_SPEED);
+                    else if (curLevel == 3)
+                        rotations *= Matrix.CreateRotationX(-ROTATION_SPEED);
+                    else if (curLevel == 1)
+                        rotations *= Matrix.CreateRotationZ(ROTATION_SPEED);
+                }
                 if (curLevel == MAX_LEVELS && countdown < 5000)
+                {
                     boss = true;
+                    translation = translation * Matrix.CreateTranslation(-100, 0, 0);
+                }
 				// Move automated objects
 				Random rand = new Random();
 				foreach (Animal e in animals)
@@ -595,6 +608,7 @@ namespace FunnelCake
 
                 handlePlayerMovement(curKey, gameTime);
 				handlePlatCollisions(player);
+                if(!boss)
                 catchAnimal();
                 if (countdown < 0)
                 {
@@ -621,12 +635,14 @@ namespace FunnelCake
                     transitionLevel();
                 }
             }
-            
 
+            if (boss)
+            {
+                countdown = 50000;
+            }
             oldKey = curKey;
 			base.Update(gameTime);
 		}
-
 		protected override void Draw(GameTime gameTime)
 		{
 			GraphicsDevice.Clear(Color.CornflowerBlue);
@@ -645,6 +661,7 @@ namespace FunnelCake
 						spriteBatch.DrawString(titleFont, "GAME OVER", Vector2.Zero, Color.White);
 						break;
 					case GameState.WIN:
+                        boss = false;
 						spriteBatch.DrawString(titleFont, "FIN.\n You scored " + score+"!", Vector2.Zero, Color.White);
 						break;
                     case GameState.PAUSE:
@@ -756,33 +773,34 @@ namespace FunnelCake
                 spriteBatch.Draw(playerSprite, new Vector2 (player.Location.X + player.Width/2, player.Location.Y + player.Height/2),
                                 null, Color.White, rotationp, new Vector2(player.Width/2, player.Height/2), 1, SpriteEffects.None, 0);
 
-
-                if (!boss)
-                {
-				// Score
-				spriteBatch.DrawString(subTitleFont, "" + score, Vector2.Zero, Color.White);
-				// Time left
-				spriteBatch.DrawString(subTitleFont, "" + countdown / 1000, new Vector2(950, 0), Color.White);
+                
 			}
-                else
-                {
-                    foreach (ModelMesh mesh in theb.Meshes)
-                    {
-
-                        foreach (BasicEffect effect in mesh.Effects)
-                        {
-                            effect.EnableDefaultLighting();
-                            effect.World = Matrix.CreateRotationY(MathHelper.PiOver2);
-                            effect.View = Matrix.CreateLookAt(cameraPosition, Vector3.Zero, Vector3.Up);
-                            effect.Projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(45.0f),
-                                .75f, 1.0f, 10000.0f);
-                        }
-                        mesh.Draw();
-                    }
-                }
-			}
-
+            if (!boss)
+            {
+                // Score
+                spriteBatch.DrawString(subTitleFont, "" + score, Vector2.Zero, Color.White);
+                // Time left
+                spriteBatch.DrawString(subTitleFont, "" + countdown / 1000, new Vector2(950, 0), Color.White);
+            }
 			spriteBatch.End();
+
+            
+            if(boss)
+            {
+                foreach (ModelMesh mesh in theb.Meshes)
+                {
+
+                    foreach (BasicEffect effect in mesh.Effects)
+                    {
+                        effect.EnableDefaultLighting();
+                        effect.World = world*rotations * translation;
+                        effect.View = Matrix.CreateLookAt(cameraPosition, Vector3.Zero, Vector3.Up);
+                        effect.Projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(45.0f),
+                            .75f, 1.0f, 50000.0f);
+                    }
+                    mesh.Draw();
+                }
+            }
 
 			base.Draw(gameTime);
 		}
@@ -811,8 +829,20 @@ namespace FunnelCake
          */
             //Reset countdown
             countdown = LEVEL_COUNTDOWN;
+            System.IO.Stream stream;
             //Load the next level
-			System.IO.Stream stream = TitleContainer.OpenStream("Content/Levels/"+level+".txt");
+            if (curLevel != 0)
+            {
+                if (level == -1)
+                {
+                    gameState = GameState.WIN;
+                    return;
+                }
+                stream = TitleContainer.OpenStream("Content/Levels/" + level + ".txt");
+            }
+            else 
+                stream = TitleContainer.OpenStream("Content/Levels/" +1+ ".txt");
+
 			System.IO.StreamReader sreader = new System.IO.StreamReader(stream);
 			string line;
 			int r = 0;
@@ -898,11 +928,13 @@ namespace FunnelCake
                 
                 //Load Transition Level
                 
-               
                 if(!boss)
                 stream = TitleContainer.OpenStream("Content/Levels/"+(level-1)+"x.txt");
                 else
-                    stream = TitleContainer.OpenStream("Content/Levels/" + (level) + "x.txt");
+                    if(curLevel != 0)
+                        stream = TitleContainer.OpenStream("Content/Levels/" + (level) + "x.txt");
+                    else
+                        stream = TitleContainer.OpenStream("Content/Levels/" + 1 + "x.txt");
 			    sreader = new System.IO.StreamReader(stream);
 			    r = 0;
                 int w = WIDTH;
@@ -954,7 +986,6 @@ namespace FunnelCake
                 }
                 gameState = GameState.TRANSITION;
                 curFrames = TRANSITION_FRAMES;
-                countdown = 100000;
             }
 		}
         private void transitionLevel()
@@ -998,6 +1029,13 @@ namespace FunnelCake
                 gameScreen = gameScreen2;
                 animals = animals2;
             }
+            if (boss)
+                if (curLevel == 4)
+                    translation = translation * Matrix.CreateTranslation(18, 0, 0);
+                else
+                {
+                    translation = translation * Matrix.CreateTranslation(7, 0, 0);
+                }
 
         }
 	}
