@@ -25,11 +25,11 @@ namespace FunnelCake
 		GraphicsDeviceManager graphics;
 		SpriteBatch spriteBatch;
         KeyboardState oldKey;
-		const int LEVEL_COUNTDOWN = 200000; // Milliseconds
+		const int LEVEL_COUNTDOWN = 30000; // Milliseconds
 		int countdown;
 
 		int curLevel;
-		const int MAX_LEVELS = 2;
+		const int MAX_LEVELS = 5;
 
 		// Screen size
 		public const int HEIGHT = 750;
@@ -39,13 +39,18 @@ namespace FunnelCake
         public const int COLS2 = 5;
 		public const int BLOCK_DIM = 50;   // Block dimension in pixels (width == height)
         public const int HALF_BLOCK_DIM = 25;
-        public const int PORTAL_COLLISION = 6;
+        public const int PORTAL_COLLISION = 8;
         public const int TRANSITION_PIXELS = 5;
         public const int TRANSITION_FRAMES = (WIDTH + (BLOCK_DIM * COLS2))/ TRANSITION_PIXELS;
         int curFrames;
+        int animalsLeft;
+        Vector3 cameraPosition = new Vector3(0.0f, 50.0f, 10000f);
 
         enum GameState { START, PLAY, LOSE, WIN, PAUSE, TRANSITION };
 		GameState gameState;
+        Matrix view = Matrix.CreateLookAt(new Vector3(0, 0, 5), Vector3.Zero, Vector3.Up);
+        Matrix world = Matrix.Identity;
+        Matrix rotations = Matrix.Identity;
 
 		// Sprites
 		List<Animal> animals;
@@ -59,6 +64,7 @@ namespace FunnelCake
 		Texture2D blockPlank;
 		Texture2D crawlerSprite;
 		Texture2D flyerSprite;
+        Model theb;
 
         Texture2D portaloff, portalup, portaldown, portalleft, 
             portalright, portalhalf, portaldouble, portalnormal;
@@ -96,12 +102,14 @@ namespace FunnelCake
 			gameScreen = new Tile[ROWS, COLS];
 			animals = new List<Animal>();
 			score = 0;
-			curLevel = 1;
+			curLevel = 4;
             oldKey = Keyboard.GetState();
             firstLevel = true;
             boss = false;
             curFrames = 0;
-
+            RasterizerState rs = new RasterizerState();
+            rs.CullMode = CullMode.CullCounterClockwiseFace;
+            GraphicsDevice.RasterizerState = rs;
 			base.Initialize();
 		}
 
@@ -120,7 +128,7 @@ namespace FunnelCake
 
 			titleFont = Content.Load<SpriteFont>(@"Fonts\Titles");
 			subTitleFont = Content.Load<SpriteFont>(@"Fonts\Sub_titles");
-
+            theb = Content.Load<Model>(@"Models/p1_wedge");
             portaloff      = Content.Load<Texture2D>(@"Sprites/portaloff");
             portalleft     = Content.Load<Texture2D>(@"Sprites/portalleft");
             portalright    = Content.Load<Texture2D>(@"Sprites/portalright");
@@ -201,6 +209,7 @@ namespace FunnelCake
 				{
 					score += 1;
 					animals.Remove(p);
+                    animalsLeft--;
 					break;
 				}
 			}
@@ -256,15 +265,29 @@ namespace FunnelCake
                         else if (b.Type == GOType.WINR)
                         {
 
-                            if (countdown <= 0)
+                            if (countdown <= 0 || animalsLeft == 0)
                             {
-                                loadLevel(++curLevel);
+                                if (!boss)
+                                {
+                                    loadLevel(++curLevel);
+                                    player.Y = b.Y;
+                                }
                             }
+                            
                         }
                         else if (b.Type == GOType.WINL)
                         {
+                            
                             if (boss)
-                                loadLevel(--curLevel);
+                            {
+                                if (curLevel - 1 == 0)
+                                    gameState = GameState.WIN;
+                                else
+                                {
+                                    loadLevel(--curLevel);
+                                    player.Y = b.Y;
+                                }
+                            }
                         }
                         else
                         {
@@ -550,7 +573,8 @@ namespace FunnelCake
 			{
                 if(curKey.IsKeyDown(Keys.P) && (!oldKey.IsKeyDown(Keys.P))){gameState = GameState.PAUSE;}
 				
-				
+                if (curLevel == MAX_LEVELS && countdown < 5000)
+                    boss = true;
 				// Move automated objects
 				Random rand = new Random();
 				foreach (Animal e in animals)
@@ -582,6 +606,9 @@ namespace FunnelCake
                 if (curFrames <= 0)
                 {
                     gameState = GameState.PLAY;
+                    animalsLeft = animals.Count;
+                    if (curLevel == MAX_LEVELS)
+                        countdown = 10000;
                 }
                 else
                 {
@@ -624,6 +651,7 @@ namespace FunnelCake
 			else
 			{
 				// Draw the game objects
+                if(!boss)
 				foreach (Animal p in animals)
 				{
                     float rotation = 0;
@@ -659,7 +687,7 @@ namespace FunnelCake
                         else if (b.Type == GOType.DOUBLE)   spriteBatch.Draw(portaldouble, b.Location, Color.White);
                         else if (b.Type == GOType.NORMAL)   spriteBatch.Draw(portalnormal, b.Location, Color.White);
                         else if (b.Type == GOType.WINR)     spriteBatch.Draw(winRight, b.Location, Color.White);
-                        else if (b.Type == GOType.WINL)     spriteBatch.Draw(winLeft, b.Location, Color.White);
+                        else if (b.Type == GOType.WINL)     if(boss)spriteBatch.Draw(winLeft, b.Location, Color.White);
 					}
 				}
                 if (gameState == GameState.TRANSITION)
@@ -686,26 +714,62 @@ namespace FunnelCake
                         else if (b.Type == GOType.DOUBLE) spriteBatch.Draw(portaldouble, b.Location, Color.White);
                         else if (b.Type == GOType.NORMAL) spriteBatch.Draw(portalnormal, b.Location, Color.White);
                         else if (b.Type == GOType.WINR) spriteBatch.Draw(winRight, b.Location, Color.White);
-                        else if (b.Type == GOType.WINL) spriteBatch.Draw(winLeft, b.Location, Color.White);
+                        else if (b.Type == GOType.WINL) if (boss) spriteBatch.Draw(winLeft, b.Location, Color.White);
                     }
+                    if(!boss)
+                    foreach (Animal p in animals2)
+                    {
+                        float rotation = 0;
+                        if (player.pt1 == portalType1.NORMAL)
+                            rotation = 0;
+                        else if (player.pt1 == portalType1.RIGHTSIDE)
+                            rotation = MathHelper.PiOver2;
+                        else if (player.pt1 == portalType1.UPSIDE)
+                            rotation = MathHelper.Pi;
+                        else if (player.pt1 == portalType1.LEFTSIDE)
+                            rotation = MathHelper.Pi + MathHelper.PiOver2;
+                        if (p.Type == GOType.CRAWLER) spriteBatch.Draw(crawlerSprite, new Vector2(p.Location.X + HALF_BLOCK_DIM, p.Location.Y + HALF_BLOCK_DIM),
+                                                                        null, Color.White, rotation, new Vector2(HALF_BLOCK_DIM, HALF_BLOCK_DIM), 1, SpriteEffects.None, 0);
+                        else if (p.Type == GOType.FLYER) spriteBatch.Draw(crawlerSprite, new Vector2(p.Location.X + HALF_BLOCK_DIM, p.Location.Y + HALF_BLOCK_DIM),
+                                                                        null, Color.White, rotation, new Vector2(HALF_BLOCK_DIM, HALF_BLOCK_DIM), 1, SpriteEffects.None, 0);
+                }
                 }
                 float rotationp = 0;
                 if (player.pt1 == portalType1.NORMAL)
                     rotationp = 0;
-                else if (player.pt1 == portalType1.RIGHTSIDE)
+                else if (player.pt1 == portalType1.LEFTSIDE)
                     rotationp = MathHelper.PiOver2;
                 else if (player.pt1 == portalType1.UPSIDE)
                     rotationp = MathHelper.Pi;
-                else if (player.pt1 == portalType1.LEFTSIDE)
+                else if (player.pt1 == portalType1.RIGHTSIDE)
                     rotationp = MathHelper.Pi + MathHelper.PiOver2;
                 spriteBatch.Draw(playerSprite, new Vector2 (player.Location.X + player.Width/2, player.Location.Y + player.Height/2),
                                 null, Color.White, rotationp, new Vector2(player.Width/2, player.Height/2), 1, SpriteEffects.None, 0);
 
 
+                if (!boss)
+                {
 				// Score
 				spriteBatch.DrawString(subTitleFont, "" + score, Vector2.Zero, Color.White);
 				// Time left
 				spriteBatch.DrawString(subTitleFont, "" + countdown / 1000, new Vector2(950, 0), Color.White);
+			}
+                else
+                {
+                    foreach (ModelMesh mesh in theb.Meshes)
+                    {
+
+                        foreach (BasicEffect effect in mesh.Effects)
+                        {
+                            effect.EnableDefaultLighting();
+                            effect.World = Matrix.CreateRotationY(MathHelper.PiOver2);
+                            effect.View = Matrix.CreateLookAt(cameraPosition, Vector3.Zero, Vector3.Up);
+                            effect.Projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(45.0f),
+                                .75f, 1.0f, 10000.0f);
+                        }
+                        mesh.Draw();
+                    }
+                }
 			}
 
 			spriteBatch.End();
@@ -767,6 +831,7 @@ namespace FunnelCake
 							gameScreen2[r, c] = new Tile(GOType.BPLANK, new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
 							break;
 						case GOType.PLAYER:
+                            if(!boss)
 							player = new Player(new Rectangle(c * BLOCK_DIM, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM), PLAYER_SPEED);
 							break;
 						case GOType.CRAWLER:
@@ -815,13 +880,22 @@ namespace FunnelCake
                 firstLevel = false;
                 
 		}
-            else
+            else if (!(boss && level == 1))
             {
                 
                 //Load Transition Level
+                
+               
+                if(!boss)
                 stream = TitleContainer.OpenStream("Content/Levels/"+(level-1)+"x.txt");
+                else
+                    stream = TitleContainer.OpenStream("Content/Levels/" + (level) + "x.txt");
 			    sreader = new System.IO.StreamReader(stream);
 			    r = 0;
+                int w = WIDTH;
+                if (boss)
+                    w = -(COLS2 * BLOCK_DIM);
+                
 			    transScreen = new Tile[ROWS, COLS2];
                 while ((line = sreader.ReadLine()) != null)
                 {
@@ -834,10 +908,10 @@ namespace FunnelCake
                             case GOType.EMPTY:
                                 break;
                             case GOType.BSOLID:
-                                transScreen[r, c] = new Tile(GOType.BSOLID, new Rectangle(c * BLOCK_DIM + WIDTH, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                                transScreen[r, c] = new Tile(GOType.BSOLID, new Rectangle(c *BLOCK_DIM + w, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
                                 break;
                             case GOType.BPLANK:
-                                transScreen[r, c] = new Tile(GOType.BPLANK, new Rectangle(c * BLOCK_DIM + WIDTH, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
+                                transScreen[r, c] = new Tile(GOType.BPLANK, new Rectangle(c *BLOCK_DIM + w, r * BLOCK_DIM, BLOCK_DIM, BLOCK_DIM));
                                 break;
                             default:
                                 break;
@@ -846,16 +920,21 @@ namespace FunnelCake
                     r++;
                 }
 
+                if (boss)
+                    w = WIDTH * -1;
                 //Transition
                 foreach (Tile b in gameScreen2)
                 {
                     if(b != null)
-                    b.X += WIDTH + (BLOCK_DIM * COLS2);
+                        if(!boss)
+                            b.X += w + (BLOCK_DIM * COLS2);
+                        else
+                            b.X += w - (BLOCK_DIM * COLS2);
                 }
                 foreach (Animal b in animals2)
                 {
                     if (b != null)
-                        b.X += WIDTH + (BLOCK_DIM * COLS2);
+                        b.X += w + (BLOCK_DIM * COLS2);
                 }
                 gameState = GameState.TRANSITION;
                 curFrames = TRANSITION_FRAMES;
@@ -863,33 +942,38 @@ namespace FunnelCake
 		}
         private void transitionLevel()
         {
+            int t = TRANSITION_PIXELS;
+            if(boss)
+            {
+                t = -t;
+            }
             foreach (Tile b in gameScreen)
             {
-                if(b!=null)
-                b.X -= TRANSITION_PIXELS;
+                if (b != null)
+                    b.X -= t;
             }
             foreach (Animal b in animals)
             {
                 if (b != null)
-                    b.X -= TRANSITION_PIXELS;
+                    b.X -= t;
             }
             foreach (Animal b in animals2)
             {
                 if (b != null)
-                    b.X -= TRANSITION_PIXELS;
+                    b.X -= t;
             }
             foreach (Tile b in transScreen)
             {
                 if (b != null)
-                    b.X -= TRANSITION_PIXELS;
+                    b.X -= t;
             }
             foreach (Tile b in gameScreen2)
             {
                 if (b != null)
-                    b.X -= TRANSITION_PIXELS;
+                    b.X -= t;
             }
             if(curFrames <190) 
-            player.X -= TRANSITION_PIXELS;
+            player.X -= t;
             curFrames--;
             if (curFrames <= 0)
             {
