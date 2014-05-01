@@ -102,7 +102,7 @@ namespace FunnelCake
 					if (intersect.Width > 0) intersectedWidth += intersect.Width;
 				}
 			}
-			if (intersectedWidth < walkingBox.Width)
+			if (intersectedWidth != 0 && intersectedWidth < walkingBox.Width)
 			{
 				velocity.X *= -1;
 			}
