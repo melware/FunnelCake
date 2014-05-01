@@ -842,10 +842,15 @@ namespace FunnelCake
                 }
 
                 //Transition
-                foreach(Tile b in gameScreen2)
+                foreach (Tile b in gameScreen2)
                 {
                     if(b != null)
                     b.X += WIDTH + (BLOCK_DIM * COLS2);
+                }
+                foreach (Animal b in animals2)
+                {
+                    if (b != null)
+                        b.X += WIDTH + (BLOCK_DIM * COLS2);
                 }
                 gameState = GameState.TRANSITION;
                 curFrames = TRANSITION_FRAMES;
@@ -859,6 +864,11 @@ namespace FunnelCake
                 b.X -= TRANSITION_PIXELS;
             }
             foreach (Animal b in animals)
+            {
+                if (b != null)
+                    b.X -= TRANSITION_PIXELS;
+            }
+            foreach (Animal b in animals2)
             {
                 if (b != null)
                     b.X -= TRANSITION_PIXELS;
