@@ -51,6 +51,7 @@ namespace FunnelCake
         Matrix view = Matrix.CreateLookAt(new Vector3(0, 0, 5), Vector3.Zero, Vector3.Up);
         Matrix world = Matrix.Identity;
         Matrix rotations = Matrix.Identity;
+
 		// Sprites
 		List<Animal> animals;
         List<Animal> animals2; //Use for transitioning levels
@@ -64,6 +65,7 @@ namespace FunnelCake
 		Texture2D crawlerSprite;
 		Texture2D flyerSprite;
         Model theb;
+
         Texture2D portaloff, portalup, portaldown, portalleft, 
             portalright, portalhalf, portaldouble, portalnormal;
 		Texture2D playerSprite;
@@ -570,7 +572,7 @@ namespace FunnelCake
 			else if (gameState == GameState.PLAY)
 			{
                 if(curKey.IsKeyDown(Keys.P) && (!oldKey.IsKeyDown(Keys.P))){gameState = GameState.PAUSE;}
-
+				
                 if (curLevel == MAX_LEVELS && countdown < 5000)
                     boss = true;
 				// Move automated objects
@@ -580,7 +582,7 @@ namespace FunnelCake
 					if (e.Type == GOType.CRAWLER) e.doWander(gameScreen);
 					else if (e.Type == GOType.FLYER)
 					{
-						e.doWander(gameScreen, animals);
+						e.doWander(gameScreen, animals, player);
 					}
 					handlePlatCollisions(e);
 				}
@@ -661,6 +663,10 @@ namespace FunnelCake
                         rotation = MathHelper.Pi;
                     else if (player.pt1 == portalType1.LEFTSIDE)
                         rotation = MathHelper.Pi + MathHelper.PiOver2;
+					
+					// TEST CODE
+					rotation = (float)Math.Atan2(p.velocity.X, -p.velocity.Y);
+						
                     if (p.Type == GOType.CRAWLER) spriteBatch.Draw(crawlerSprite, new Vector2(p.Location.X + HALF_BLOCK_DIM, p.Location.Y + HALF_BLOCK_DIM),
                                                                     null, Color.White, rotation, new Vector2(HALF_BLOCK_DIM, HALF_BLOCK_DIM), 1, SpriteEffects.None, 0);
                     else if (p.Type == GOType.FLYER) spriteBatch.Draw(crawlerSprite, new Vector2(p.Location.X + HALF_BLOCK_DIM, p.Location.Y + HALF_BLOCK_DIM),
@@ -726,7 +732,7 @@ namespace FunnelCake
                                                                         null, Color.White, rotation, new Vector2(HALF_BLOCK_DIM, HALF_BLOCK_DIM), 1, SpriteEffects.None, 0);
                         else if (p.Type == GOType.FLYER) spriteBatch.Draw(crawlerSprite, new Vector2(p.Location.X + HALF_BLOCK_DIM, p.Location.Y + HALF_BLOCK_DIM),
                                                                         null, Color.White, rotation, new Vector2(HALF_BLOCK_DIM, HALF_BLOCK_DIM), 1, SpriteEffects.None, 0);
-                    }
+                }
                 }
                 float rotationp = 0;
                 if (player.pt1 == portalType1.NORMAL)
@@ -743,16 +749,16 @@ namespace FunnelCake
 
                 if (!boss)
                 {
-                    // Score
-                    spriteBatch.DrawString(subTitleFont, "" + score, Vector2.Zero, Color.White);
-                    // Time left
-                    spriteBatch.DrawString(subTitleFont, "" + countdown / 1000, new Vector2(950, 0), Color.White);
-                }
+				// Score
+				spriteBatch.DrawString(subTitleFont, "" + score, Vector2.Zero, Color.White);
+				// Time left
+				spriteBatch.DrawString(subTitleFont, "" + countdown / 1000, new Vector2(950, 0), Color.White);
+			}
                 else
                 {
                     foreach (ModelMesh mesh in theb.Meshes)
                     {
-                        
+
                         foreach (BasicEffect effect in mesh.Effects)
                         {
                             effect.EnableDefaultLighting();

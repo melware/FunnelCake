@@ -15,6 +15,7 @@ namespace FunnelCake
 		float curJumpVel;
         public Rectangle oldRec;
 		public float speed;
+		public Vector2 velocity;
         
 		public Player(Rectangle bound, float vel)
 			: base(bound)
