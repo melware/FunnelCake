@@ -49,7 +49,7 @@ namespace FunnelCake
 
             if (!tmpVector.Equals(Vector2.Zero)) tmpVector.Normalize();
             tmpVector.X += tmpVector.X * speed * (flee ? fleeMultiplier : 1);
-            // Wandering 
+            // Wandering like a crawler
             int intersectedWidth = 0;
             Rectangle tempRec;
             switch (this.pt1)
