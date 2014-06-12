@@ -14,12 +14,15 @@ namespace FunnelCake
         bool upWhileJump;
 		float curJumpVel;
         public Rectangle oldRec;
+		public float speed;
+		public Vector2 velocity;
         
-		public Player(Rectangle bound)
+		public Player(Rectangle bound, float vel)
 			: base(bound)
 		{
 			jumpState = false;
 			curJumpVel = 0;
+			speed = vel;
             oldRec = bound;
             holdingUp = false;
             pt1 = portalType1.NORMAL;
